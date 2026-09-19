@@ -1,0 +1,7 @@
+{
+  "name": "SymptomCheck: Medical Rule Engine",
+  "description": "Offline-first medical triage rule engine with forward-chaining propositional KBS, symptom assessment, and clinical audit trail.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
