@@ -22,8 +22,8 @@ import { GeoCoordinate, GeoService, NearbyHospital } from '../services/GeoServic
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
 const hospitalIcon = L.divIcon({
@@ -39,12 +39,13 @@ const userIcon = L.divIcon({
 });
 
 const EMERGENCY_CONTACTS = [
-  { label: 'National Emergency Hotline', number: '911',             icon: '🚨' },
-  { label: 'Philippine Red Cross',       number: '143',             icon: '🩸' },
-  { label: 'PNP (Police)',               number: '117',             icon: '👮' },
-  { label: 'BFP (Fire)',                 number: '160',             icon: '🚒' },
-  { label: 'NDRRMC',                     number: '1-800-1000-5990', icon: '⚠️' },
-  { label: 'DOH Hotline',               number: '1555',            icon: '🏥' },
+  { label: 'National Emergency Hotline', number: '911', icon: '🚨' },
+  { label: 'Philippine Red Cross', number: '143', icon: '🩸' },
+  { label: 'PNP (Police)', number: '117', icon: '👮' },
+  { label: 'BFP (Fire)', number: '160', icon: '🚒' },
+  { label: 'NDRRMC', number: '1-800-1000-5990', icon: '⚠️' },
+  { label: 'DOH Hotline', number: '1555', icon: '🏥' },
+  { label: 'Ivan Graciano', number: '09399279166', icon: '👨' },
 ];
 
 interface HospitalMapViewProps {
@@ -57,17 +58,28 @@ type Status = 'idle' | 'locating' | 'geocoding' | 'searching' | 'done' | 'error'
 
 export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpenLogin }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef          = useRef<L.Map | null>(null);
-  const markersRef      = useRef<Record<string, L.Marker>>({});
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<Record<string, L.Marker>>({});
 
   // ── State ──────────────────────────────────────────────────
-  const [currentGeo,  setCurrentGeo]  = useState<GeoCoordinate | null>(null);
-  const [hospitals,   setHospitals]   = useState<NearbyHospital[]>([]);
-  const [selectedId,  setSelectedId]  = useState<string | null>(null);
-  const [status,      setStatus]      = useState<Status>('idle');
-  const [errorMsg,    setErrorMsg]    = useState('');
-  const [manualAddr,  setManualAddr]  = useState('');
+  const [currentGeo, setCurrentGeo] = useState<GeoCoordinate | null>(null);
+  const [hospitals, setHospitals] = useState<NearbyHospital[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [status, setStatus] = useState<Status>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [manualAddr, setManualAddr] = useState('');
   const [locationSrc, setLocationSrc] = useState('');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [dataSource, setDataSource] = useState<'live'|'cache'|'static'|null>(null);
+
+  // Track online/offline
+  useEffect(() => {
+    const up   = () => setIsOnline(true);
+    const down = () => setIsOnline(false);
+    window.addEventListener('online',  up);
+    window.addEventListener('offline', down);
+    return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
+  }, []);
 
   // ── Initialize / re-center map whenever currentGeo changes ──
   // This runs AFTER React re-renders, so the div ref is always valid.
@@ -135,7 +147,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
 
   // ── Core: fetch hospitals for a given coordinate ─────────────
   const fetchHospitals = useCallback(async (geo: GeoCoordinate, label: string) => {
-    setCurrentGeo(geo);      // triggers map init useEffect on next render
+    setCurrentGeo(geo);
     setLocationSrc(label);
     setStatus('searching');
     setErrorMsg('');
@@ -147,7 +159,9 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
       setStatus('error');
       setErrorMsg('No hospitals found within 15 km. Try a different address or use your GPS.');
     } else {
+      GeoService.saveToCache(geo.lat, geo.lng, list, label); // persist for offline
       setHospitals(list);
+      setDataSource('live');
       setStatus('done');
     }
   }, []);
@@ -181,7 +195,45 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
 
   // ── Auto-search on mount ─────────────────────────────────────
   useEffect(() => {
-    if (profile?.address) searchByAddress(profile.address);
+    const addr = profile?.address;
+
+    if (!isOnline) {
+      // OFFLINE: Try cache → GPS+static → full static list
+      (async () => {
+        // 1. Try to get GPS to look up cache and sort static list
+        const gps = await GeoService.getBrowserLocation();
+
+        if (gps) {
+          const cached = GeoService.getFromCache(gps.lat, gps.lng);
+          if (cached) {
+            setCurrentGeo(gps);
+            setHospitals(cached.hospitals);
+            setLocationSrc(cached.locationSrc + ' (cached)');
+            setDataSource('cache');
+            setStatus('done');
+            return;
+          }
+          // No cache — use static list sorted by GPS
+          const statics = GeoService.getStaticHospitals(gps.lat, gps.lng);
+          setCurrentGeo(gps);
+          setHospitals(statics);
+          setLocationSrc('Nearby (offline list)');
+          setDataSource('static');
+          setStatus('done');
+        } else {
+          // No GPS either — show full static list as-is
+          const statics = GeoService.getStaticHospitals(14.5995, 120.9842); // Manila centre fallback
+          setHospitals(statics);
+          setLocationSrc('Philippine Hospitals (offline list)');
+          setDataSource('static');
+          setStatus('done');
+        }
+      })();
+      return;
+    }
+
+    // ONLINE: normal flow
+    if (addr) searchByAddress(addr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -209,7 +261,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
   }, []);
 
   const isLoading = ['locating', 'geocoding', 'searching'].includes(status);
-  const showMap   = ['searching', 'done', 'error'].includes(status) && currentGeo !== null;
+  // Hide the Leaflet map when offline — tiles need internet
+  const showMap = ['searching', 'done', 'error'].includes(status) && currentGeo !== null && isOnline;
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-60px)] bg-[#F4F7F9]">
@@ -263,7 +316,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           {isLoading && (
             <p className="text-xs text-teal-600 font-medium flex items-center gap-1.5">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {status === 'locating'  && 'Getting GPS location…'}
+              {status === 'locating' && 'Getting GPS location…'}
               {status === 'geocoding' && 'Locating address…'}
               {status === 'searching' && 'Searching for nearby hospitals…'}
             </p>
@@ -288,6 +341,23 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer">
               Sign In
             </button>
+          </div>
+        )}
+
+        {/* Offline banner */}
+        {!isOnline && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <span className="text-xl shrink-0">📡</span>
+            <div>
+              <p className="text-sm font-bold text-amber-800">You're offline</p>
+              <p className="text-[11px] text-amber-600 mt-0.5">
+                {dataSource === 'cache'
+                  ? 'Showing your last saved hospital search. Map tiles unavailable.'
+                  : dataSource === 'static'
+                  ? 'Showing built-in Philippine hospital list sorted by your GPS. Map tiles unavailable.'
+                  : 'No internet connection. Hospital map unavailable.'}
+              </p>
+            </div>
           </div>
         )}
 
@@ -327,16 +397,15 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
             {hospitals.map(h => {
               const dist = h.distanceKm !== undefined
                 ? (h.distanceKm < 1
-                    ? `${(h.distanceKm * 1000).toFixed(0)} m`
-                    : `${h.distanceKm.toFixed(1)} km`)
+                  ? `${(h.distanceKm * 1000).toFixed(0)} m`
+                  : `${h.distanceKm.toFixed(1)} km`)
                 : null;
               return (
                 <div key={h.id} onClick={() => flyTo(h)}
-                  className={`bg-white rounded-2xl border p-4 cursor-pointer transition-all shadow-[0_2px_8px_-3px_rgba(15,23,42,0.06)] ${
-                    selectedId === h.id
+                  className={`bg-white rounded-2xl border p-4 cursor-pointer transition-all shadow-[0_2px_8px_-3px_rgba(15,23,42,0.06)] ${selectedId === h.id
                       ? 'border-teal-400 ring-2 ring-teal-500/20'
                       : 'border-slate-200/80 hover:border-teal-200'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">

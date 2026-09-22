@@ -1,3 +1,5 @@
+import { STATIC_PH_HOSPITALS, StaticHospital } from '../data/staticHospitals';
+
 export interface GeoCoordinate {
   lat: number;
   lng: number;
@@ -128,6 +130,20 @@ async function nominatimFallback(
   }
 }
 
+// ── localStorage cache ──────────────────────────────────────────
+interface HospitalCache {
+  hospitals: NearbyHospital[];
+  locationSrc: string;
+  cachedAt: number;
+}
+
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function cacheKey(lat: number, lng: number) {
+  // Round to 0.05° grid (~5 km) so nearby searches share the same cache slot
+  return `hosp_cache_${(Math.round(lat * 20) / 20).toFixed(2)}_${(Math.round(lng * 20) / 20).toFixed(2)}`;
+}
+
 export class GeoService {
   /** Geocode a text address → {lat, lng} via Nominatim. */
   static async geocodeAddress(address: string): Promise<GeoCoordinate | null> {
@@ -158,6 +174,41 @@ export class GeoService {
         { timeout: 10000, maximumAge: 60000 }
       );
     });
+  }
+
+  /** Save fetched hospitals to localStorage for offline use. */
+  static saveToCache(lat: number, lng: number, hospitals: NearbyHospital[], locationSrc: string) {
+    try {
+      const entry: HospitalCache = { hospitals, locationSrc, cachedAt: Date.now() };
+      localStorage.setItem(cacheKey(lat, lng), JSON.stringify(entry));
+    } catch { /* storage full – ignore */ }
+  }
+
+  /** Load cached hospitals from localStorage (returns null if stale/missing). */
+  static getFromCache(lat: number, lng: number): HospitalCache | null {
+    try {
+      const raw = localStorage.getItem(cacheKey(lat, lng));
+      if (!raw) return null;
+      const entry: HospitalCache = JSON.parse(raw);
+      if (Date.now() - entry.cachedAt > CACHE_TTL_MS) return null;
+      return entry;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get the nearest hospitals from the built-in static list.
+   * Works fully offline — no network required.
+   */
+  static getStaticHospitals(lat: number, lng: number, limit = 15): NearbyHospital[] {
+    return (STATIC_PH_HOSPITALS as StaticHospital[])
+      .map(h => ({
+        ...h,
+        distanceKm: haversine(lat, lng, h.lat, h.lng),
+      }))
+      .sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99))
+      .slice(0, limit) as NearbyHospital[];
   }
 
   /**
