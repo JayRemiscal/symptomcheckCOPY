@@ -181,10 +181,6 @@ export default function App() {
             onClearSymptoms={handleClearSymptoms}
             onApplyPreset={handleApplyPreset}
             onEvaluate={handleEvaluateSymptoms}
-            onBack={() => {
-              setCurrentView('home');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
           />
         )}
 

@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowLeft,
-
   Brain,
   ChevronDown,
   ChevronUp,
@@ -23,7 +21,6 @@ interface SymptomAssessmentViewProps {
   onClearSymptoms: () => void;
   onApplyPreset: (symptomIds: string[]) => void;
   onEvaluate: () => void;
-  onBack?: () => void;
 }
 
 export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
@@ -32,7 +29,6 @@ export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
   onClearSymptoms,
   onApplyPreset,
   onEvaluate,
-  onBack,
 }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,17 +111,7 @@ export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
       {/* Header Info Card / Dashboard Hero Banner */}
       <div className="px-3.5 sm:px-5 pt-4 sm:pt-6">
         <div className="max-w-4xl mx-auto space-y-3">
-          {/* Back Navigation Button */}
-          {onBack && (
-            <button
-              id="btn-back-assessment"
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all cursor-pointer active:scale-95"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
-              <span>Back</span>
-            </button>
-          )}
+
 
           <div className="bg-gradient-to-br from-white via-sky-50/50 to-teal-50/40 border border-teal-100/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-[0_4px_20px_-4px_rgba(13,148,136,0.06)]">
 
