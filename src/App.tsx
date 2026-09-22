@@ -4,6 +4,7 @@ import { AdminRulesModal } from './components/AdminRulesModal';
 import { AmbulanceLoader } from './components/AmbulanceLoader';
 import { ExportReportModal } from './components/ExportReportModal';
 import { HistoryView } from './components/HistoryView';
+import { HospitalMapView } from './components/HospitalMapView';
 import { LandingView } from './components/LandingView';
 import { LoginView } from './components/LoginView';
 import { SymptomAssessmentView } from './components/SymptomAssessmentView';
@@ -18,7 +19,7 @@ import { RuleStorageService } from './services/RuleStorageService';
 import { InferenceCycleResult, UserProfile } from './types';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results' | 'login' | 'history'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals'>('home');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => AuthService.getUserProfile());
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(() => LanguageService.getLanguage());
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -143,12 +144,12 @@ export default function App() {
         onOpenLogin={() => setCurrentView('login')}
         onLogout={handleLogout}
         onBack={() => {
-          // Contextual back navigation per view
           const backMap: Record<typeof currentView, typeof currentView> = {
             results: 'assessment',
             assessment: 'home',
             login: 'home',
             history: 'home',
+            hospitals: 'results',
             home: 'home',
           };
           const dest = backMap[currentView];
@@ -207,6 +208,10 @@ export default function App() {
             onStartNewAssessment={handleStartNewAssessment}
             onOpenExportModal={() => setShowExportModal(true)}
             onOpenLogin={() => setCurrentView('login')}
+            onFindHospitals={() => {
+              setCurrentView('hospitals');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 
@@ -220,6 +225,14 @@ export default function App() {
               setCurrentView('results');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+          />
+        )}
+
+        {currentView === 'hospitals' && (
+          <HospitalMapView
+            profile={userProfile}
+            onOpenLogin={() => setCurrentView('login')}
+            onStartAssessment={handleStartAssessmentClick}
           />
         )}
       </main>

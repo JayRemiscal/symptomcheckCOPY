@@ -30,6 +30,7 @@ interface TriageResultsViewProps {
   onStartNewAssessment: () => void;
   onOpenExportModal: () => void;
   onOpenLogin?: () => void;
+  onFindHospitals?: () => void;
 }
 
 
@@ -39,6 +40,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
   onStartNewAssessment,
   onOpenExportModal,
   onOpenLogin,
+  onFindHospitals,
 }) => {
 
   const [whyDrawerOpen, setWhyDrawerOpen] = useState(true);
@@ -620,23 +622,34 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
 
       {/* 4. Action Buttons Sticky Footer */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-3.5 sm:px-5 pt-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:py-4 shadow-[0_-4px_24px_rgba(15,23,42,0.06)]">
-        <div className="max-w-4xl mx-auto flex items-center gap-2.5 sm:gap-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-2.5">
           <button
             id="btn-start-new-assessment"
             onClick={onStartNewAssessment}
-            className="flex-1 min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border border-slate-200/90 font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
+            className="flex-1 min-h-[48px] flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border border-slate-200/90 font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
           >
-            <RefreshCw className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="truncate">New Assessment</span>
+            <RefreshCw className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="truncate">New</span>
           </button>
+
+          {onFindHospitals && (
+            <button
+              id="btn-find-hospital"
+              onClick={onFindHospitals}
+              className="flex-1 min-h-[48px] flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all shadow-2xs active:scale-[0.99]"
+            >
+              <span className="text-base leading-none">🏥</span>
+              <span className="truncate">Hospitals</span>
+            </button>
+          )}
 
           <button
             id="btn-export-report"
             onClick={onOpenExportModal}
-            className="flex-1 min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-teal-600 via-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 active:from-teal-700 active:to-teal-800 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md shadow-teal-700/20 active:scale-[0.99]"
+            className="flex-1 min-h-[48px] flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-gradient-to-r from-teal-600 via-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 active:from-teal-700 active:to-teal-800 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md shadow-teal-700/20 active:scale-[0.99]"
           >
-            <Download className="w-4 h-4 text-white shrink-0" />
-            <span className="truncate">Export Report</span>
+            <Download className="w-3.5 h-3.5 text-white shrink-0" />
+            <span className="truncate">Export</span>
           </button>
         </div>
       </div>

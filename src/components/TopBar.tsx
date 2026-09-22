@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ClipboardList,
   Globe,
+  Hospital,
   LogIn,
   LogOut,
   Menu,
@@ -17,11 +18,11 @@ import { UserProfile } from '../types';
 import { SupportedLanguage, LANGUAGE_OPTIONS } from '../data/translations';
 
 interface TopBarProps {
-  currentView: 'home' | 'assessment' | 'results' | 'login' | 'history';
+  currentView: 'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals';
   user: UserProfile | null;
   currentLanguage: SupportedLanguage;
   onLanguageChange: (lang: SupportedLanguage) => void;
-  onNavigate: (view: 'home' | 'assessment' | 'results' | 'login' | 'history') => void;
+  onNavigate: (view: 'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals') => void;
   onOpenAdmin: () => void;
   onOpenLogin: () => void;
   onLogout: () => void;
@@ -202,6 +203,31 @@ export const TopBar: React.FC<TopBarProps> = ({
                     </span>
                     {currentView === 'history' && (
                       <Check className="w-3.5 h-3.5 text-teal-500 ml-auto" />
+                    )}
+                  </button>
+
+                  {/* Nearest Hospitals */}
+                  <button
+                    id="menu-hospitals-btn"
+                    onClick={() => { onNavigate('hospitals'); close(); }}
+                    className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors cursor-pointer ${
+                      currentView === 'hospitals' ? 'bg-rose-50' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      currentView === 'hospitals'
+                        ? 'bg-rose-100 text-rose-600'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      <Hospital className="w-4 h-4" />
+                    </div>
+                    <span className={`text-sm font-semibold ${
+                      currentView === 'hospitals' ? 'text-rose-700' : 'text-slate-700'
+                    }`}>
+                      Nearest Hospitals
+                    </span>
+                    {currentView === 'hospitals' && (
+                      <Check className="w-3.5 h-3.5 text-rose-500 ml-auto" />
                     )}
                   </button>
 
