@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  ArrowLeft,
   Check,
   ChevronDown,
   ClipboardList,
@@ -24,6 +25,7 @@ interface TopBarProps {
   onOpenAdmin: () => void;
   onOpenLogin: () => void;
   onLogout: () => void;
+  onBack: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -35,6 +37,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenAdmin,
   onOpenLogin,
   onLogout,
+  onBack,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langExpanded, setLangExpanded] = useState(false);
@@ -70,21 +73,36 @@ export const TopBar: React.FC<TopBarProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/60 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
 
-        {/* Brand */}
-        <div
-          id="app-brand"
-          onClick={() => onNavigate('home')}
-          className="flex items-center gap-2 cursor-pointer select-none group shrink-0"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && onNavigate('home')}
-        >
-          <div className="text-teal-600 group-hover:scale-105 transition-transform">
-            <Activity className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.6]" />
+        {/* Left side: back button + brand */}
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Back button — shown on all non-home views */}
+          {currentView !== 'home' && (
+            <button
+              id="back-btn"
+              onClick={onBack}
+              aria-label="Go back"
+              className="p-2 rounded-xl text-slate-500 hover:text-teal-700 hover:bg-teal-50 transition-colors cursor-pointer shrink-0 -ml-1"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Brand */}
+          <div
+            id="app-brand"
+            onClick={() => onNavigate('home')}
+            className="flex items-center gap-2 cursor-pointer select-none group shrink-0"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onNavigate('home')}
+          >
+            <div className="text-teal-600 group-hover:scale-105 transition-transform">
+              <Activity className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.6]" />
+            </div>
+            <span className="font-extrabold text-base sm:text-xl tracking-tight text-slate-900">
+              SymptomCheck
+            </span>
           </div>
-          <span className="font-extrabold text-base sm:text-xl tracking-tight text-slate-900">
-            SymptomCheck
-          </span>
         </div>
 
         {/* Hamburger button */}

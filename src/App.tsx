@@ -127,6 +127,19 @@ export default function App() {
         onOpenAdmin={() => setShowAdminModal(true)}
         onOpenLogin={() => setCurrentView('login')}
         onLogout={handleLogout}
+        onBack={() => {
+          // Contextual back navigation per view
+          const backMap: Record<typeof currentView, typeof currentView> = {
+            results: 'assessment',
+            assessment: 'home',
+            login: 'home',
+            history: 'home',
+            home: 'home',
+          };
+          const dest = backMap[currentView];
+          setCurrentView(dest);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* Main Views */}
