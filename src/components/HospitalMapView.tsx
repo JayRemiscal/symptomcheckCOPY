@@ -145,7 +145,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
   // ── Cleanup on unmount ───────────────────────────────────────
   useEffect(() => () => { mapRef.current?.remove(); mapRef.current = null; }, []);
 
-  // ── Core: fetch hospitals for a given coordinate ─────────────
+  // ── Core: fetch hospitals → cascade live → cache → static ────────────
   const fetchHospitals = useCallback(async (geo: GeoCoordinate, label: string) => {
     setCurrentGeo(geo);
     setLocationSrc(label);
@@ -153,17 +153,32 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
     setErrorMsg('');
     setHospitals([]);
 
-    const list = await GeoService.findNearbyHospitals(geo.lat, geo.lng);
-
-    if (list.length === 0) {
-      setStatus('error');
-      setErrorMsg('No hospitals found within 15 km. Try a different address or use your GPS.');
-    } else {
-      GeoService.saveToCache(geo.lat, geo.lng, list, label); // persist for offline
-      setHospitals(list);
+    // 1️⃣ Try live Overpass/Nominatim search
+    const live = await GeoService.findNearbyHospitals(geo.lat, geo.lng);
+    if (live.length > 0) {
+      GeoService.saveToCache(geo.lat, geo.lng, live, label);
+      setHospitals(live);
       setDataSource('live');
       setStatus('done');
+      return;
     }
+
+    // 2️⃣ Live failed — try localStorage cache
+    const cached = GeoService.getFromCache(geo.lat, geo.lng);
+    if (cached && cached.hospitals.length > 0) {
+      setHospitals(cached.hospitals);
+      setLocationSrc(cached.locationSrc + ' (cached)');
+      setDataSource('cache');
+      setStatus('done');
+      return;
+    }
+
+    // 3️⃣ No cache — show built-in static list sorted by distance
+    const statics = GeoService.getStaticHospitals(geo.lat, geo.lng);
+    setHospitals(statics);
+    setLocationSrc('Nearby hospitals (offline list)');
+    setDataSource('static');
+    setStatus('done');
   }, []);
 
   // ── Search by address text ───────────────────────────────────
@@ -173,8 +188,17 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
     setErrorMsg('');
     const geo = await GeoService.geocodeAddress(address);
     if (!geo) {
-      setStatus('error');
-      setErrorMsg(`Could not locate "${address}". Try adding a city, province, or country name.`);
+      // Geocoding failed (offline or bad address) — cascade to GPS → static
+      const gps = await GeoService.getBrowserLocation();
+      if (gps) {
+        await fetchHospitals(gps, 'Your GPS Location');
+      } else {
+        const statics = GeoService.getStaticHospitals(14.5995, 120.9842);
+        setHospitals(statics);
+        setLocationSrc('Philippine Hospitals (offline list)');
+        setDataSource('static');
+        setStatus('done');
+      }
       return;
     }
     await fetchHospitals(geo, address);
@@ -186,54 +210,38 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
     setErrorMsg('');
     const geo = await GeoService.getBrowserLocation();
     if (!geo) {
-      setStatus('error');
-      setErrorMsg('GPS location unavailable. Please type your address manually.');
+      // GPS failed — fall back to static list
+      const statics = GeoService.getStaticHospitals(14.5995, 120.9842);
+      setHospitals(statics);
+      setLocationSrc('Philippine Hospitals (offline list)');
+      setDataSource('static');
+      setStatus('done');
       return;
     }
     await fetchHospitals(geo, 'Your GPS Location');
   }, [fetchHospitals]);
 
-  // ── Auto-search on mount ─────────────────────────────────────
+  // ── Auto-show hospitals on mount (always shows something) ──────────
   useEffect(() => {
     const addr = profile?.address;
-
-    if (!isOnline) {
-      // OFFLINE: Try cache → GPS+static → full static list
+    if (addr) {
+      // searchByAddress already cascades to GPS → static on failure
+      searchByAddress(addr);
+    } else {
+      // No address — try GPS, then show static list
       (async () => {
-        // 1. Try to get GPS to look up cache and sort static list
         const gps = await GeoService.getBrowserLocation();
-
         if (gps) {
-          const cached = GeoService.getFromCache(gps.lat, gps.lng);
-          if (cached) {
-            setCurrentGeo(gps);
-            setHospitals(cached.hospitals);
-            setLocationSrc(cached.locationSrc + ' (cached)');
-            setDataSource('cache');
-            setStatus('done');
-            return;
-          }
-          // No cache — use static list sorted by GPS
-          const statics = GeoService.getStaticHospitals(gps.lat, gps.lng);
-          setCurrentGeo(gps);
-          setHospitals(statics);
-          setLocationSrc('Nearby (offline list)');
-          setDataSource('static');
-          setStatus('done');
+          await fetchHospitals(gps, 'Your GPS Location');
         } else {
-          // No GPS either — show full static list as-is
-          const statics = GeoService.getStaticHospitals(14.5995, 120.9842); // Manila centre fallback
+          const statics = GeoService.getStaticHospitals(14.5995, 120.9842);
           setHospitals(statics);
           setLocationSrc('Philippine Hospitals (offline list)');
           setDataSource('static');
           setStatus('done');
         }
       })();
-      return;
     }
-
-    // ONLINE: normal flow
-    if (addr) searchByAddress(addr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
