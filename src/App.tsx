@@ -19,7 +19,27 @@ import { RuleStorageService } from './services/RuleStorageService';
 import { InferenceCycleResult, UserProfile } from './types';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals'>('home');
+  const [viewHistory, setViewHistory] = useState<Array<'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals'>>(['home']);
+  const currentView = viewHistory[viewHistory.length - 1];
+
+  // Push a new view onto the history stack
+  const navigate = (view: typeof currentView) => {
+    setViewHistory(prev => {
+      // Don't push the same view twice in a row
+      if (prev[prev.length - 1] === view) return prev;
+      return [...prev, view];
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Pop back to the previous view
+  const handleBack = () => {
+    setViewHistory(prev => {
+      if (prev.length <= 1) return prev;
+      return prev.slice(0, -1);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => AuthService.getUserProfile());
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(() => LanguageService.getLanguage());
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -37,8 +57,7 @@ export default function App() {
   // Auth / Login handlers
   const handleLoginSuccess = (profile: UserProfile) => {
     setUserProfile(profile);
-    setCurrentView('assessment');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('assessment');
   };
 
 
@@ -103,8 +122,7 @@ export default function App() {
 
       setInferenceResult(result);
       setIsEvaluating(false);
-      setCurrentView('results');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate('results');
     }, 1800);
   };
 
@@ -112,17 +130,15 @@ export default function App() {
   const handleStartNewAssessment = () => {
     setSelectedSymptoms([]);
     setInferenceResult(null);
-    setCurrentView('assessment');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('assessment');
   };
 
   const handleStartAssessmentClick = () => {
     if (!userProfile) {
-      setCurrentView('login');
+      navigate('login');
     } else {
-      setCurrentView('assessment');
+      navigate('assessment');
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -136,26 +152,11 @@ export default function App() {
         user={userProfile}
         currentLanguage={currentLanguage}
         onLanguageChange={handleLanguageChange}
-        onNavigate={(view) => {
-          setCurrentView(view);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onNavigate={(view) => navigate(view)}
         onOpenAdmin={() => setShowAdminModal(true)}
-        onOpenLogin={() => setCurrentView('login')}
+        onOpenLogin={() => navigate('login')}
         onLogout={handleLogout}
-        onBack={() => {
-          const backMap: Record<typeof currentView, typeof currentView> = {
-            results: 'assessment',
-            assessment: 'home',
-            login: 'home',
-            history: 'home',
-            hospitals: 'results',
-            home: 'home',
-          };
-          const dest = backMap[currentView];
-          setCurrentView(dest);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onBack={handleBack}
       />
 
       {/* Main Views */}
@@ -165,14 +166,8 @@ export default function App() {
             currentUser={userProfile}
             currentLanguage={currentLanguage}
             onLoginSuccess={handleLoginSuccess}
-            onContinueAsGuest={() => {
-              setCurrentView('assessment');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            onCancel={() => {
-              setCurrentView('home');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+          onContinueAsGuest={() => navigate('assessment')}
+            onCancel={() => navigate('home')}
           />
         )}
 
@@ -207,11 +202,8 @@ export default function App() {
             userProfile={userProfile}
             onStartNewAssessment={handleStartNewAssessment}
             onOpenExportModal={() => setShowExportModal(true)}
-            onOpenLogin={() => setCurrentView('login')}
-            onFindHospitals={() => {
-              setCurrentView('hospitals');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+          onOpenLogin={() => navigate('login')}
+            onFindHospitals={() => navigate('hospitals')}
           />
         )}
 
@@ -219,11 +211,10 @@ export default function App() {
           <HistoryView
             profile={userProfile}
             onStartAssessment={handleStartAssessmentClick}
-            onOpenLogin={() => setCurrentView('login')}
+            onOpenLogin={() => navigate('login')}
             onViewResult={(result: InferenceCycleResult) => {
               setInferenceResult(result);
-              setCurrentView('results');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              navigate('results');
             }}
           />
         )}
@@ -231,7 +222,7 @@ export default function App() {
         {currentView === 'hospitals' && (
           <HospitalMapView
             profile={userProfile}
-            onOpenLogin={() => setCurrentView('login')}
+            onOpenLogin={() => navigate('login')}
             onStartAssessment={handleStartAssessmentClick}
           />
         )}
