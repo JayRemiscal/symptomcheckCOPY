@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { copyFileSync, mkdirSync } from 'fs';
+import { mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -23,17 +23,17 @@ await sharp(path.join(artifactDir, 'symptomcheck_icon_1790067793727.png'))
   .toFile(path.join(publicDir, 'icons', 'icon-512.png'));
 console.log('✅ icon-512.png created');
 
-// Resize screenshots to 1280x720
-await sharp(path.join(artifactDir, 'screenshot_home_1790068180812.png'))
-  .resize(1280, 720, { fit: 'cover' })
+// Mobile portrait screenshots (1080x1920 — standard Android resolution)
+await sharp(path.join(artifactDir, 'screenshot_mobile_home_1790068606879.png'))
+  .resize(1080, 1920, { fit: 'cover', position: 'top' })
   .png()
   .toFile(path.join(publicDir, 'screenshots', 'home.png'));
-console.log('✅ screenshots/home.png created');
+console.log('✅ screenshots/home.png created (1080x1920 portrait)');
 
-await sharp(path.join(artifactDir, 'screenshot_assessment_1790068251190.png'))
-  .resize(1280, 720, { fit: 'cover' })
+await sharp(path.join(artifactDir, 'screenshot_mobile_assessment_1790068638811.png'))
+  .resize(1080, 1920, { fit: 'cover', position: 'top' })
   .png()
   .toFile(path.join(publicDir, 'screenshots', 'assessment.png'));
-console.log('✅ screenshots/assessment.png created');
+console.log('✅ screenshots/assessment.png created (1080x1920 portrait)');
 
 console.log('\n🎉 All PWA assets generated!');

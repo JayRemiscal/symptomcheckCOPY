@@ -38,16 +38,16 @@
   "screenshots": [
     {
       "src": "/screenshots/home.png",
-      "sizes": "1280x720",
+      "sizes": "1080x1920",
       "type": "image/png",
-      "form_factor": "wide",
+      "form_factor": "narrow",
       "label": "SymptomCheck Home Screen"
     },
     {
       "src": "/screenshots/assessment.png",
-      "sizes": "1280x720",
+      "sizes": "1080x1920",
       "type": "image/png",
-      "form_factor": "wide",
+      "form_factor": "narrow",
       "label": "Symptom Assessment"
     }
   ]
