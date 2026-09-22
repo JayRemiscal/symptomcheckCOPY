@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { AdminRulesModal } from './components/AdminRulesModal';
+import { AmbulanceLoader } from './components/AmbulanceLoader';
 import { ExportReportModal } from './components/ExportReportModal';
 import { HistoryView } from './components/HistoryView';
 import { LandingView } from './components/LandingView';
@@ -22,6 +23,7 @@ export default function App() {
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(() => LanguageService.getLanguage());
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [inferenceResult, setInferenceResult] = useState<InferenceCycleResult | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [showAdminPasscodeModal, setShowAdminPasscodeModal] = useState<boolean>(false);
@@ -83,16 +85,26 @@ export default function App() {
 
   // Evaluate Symptoms via Forward Chaining Engine
   const handleEvaluateSymptoms = () => {
-    const activeRules = RuleStorageService.getAllRules().filter((r) => r.enabled);
-    const engine = new ForwardChainingEngine(activeRules);
-    const result = engine.evaluate(selectedSymptoms);
+    if (selectedSymptoms.length === 0) return;
 
-    // Auto-save to per-account history
-    HistoryService.saveAssessment(userProfile, result);
-
-    setInferenceResult(result);
-    setCurrentView('results');
+    // Show ambulance loader
+    setIsEvaluating(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Small async delay so animation renders before heavy computation
+    setTimeout(() => {
+      const activeRules = RuleStorageService.getAllRules().filter((r) => r.enabled);
+      const engine = new ForwardChainingEngine(activeRules);
+      const result = engine.evaluate(selectedSymptoms);
+
+      // Auto-save to per-account history
+      HistoryService.saveAssessment(userProfile, result);
+
+      setInferenceResult(result);
+      setIsEvaluating(false);
+      setCurrentView('results');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1800);
   };
 
   // Start new assessment
@@ -114,6 +126,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F7F9] text-slate-800 flex flex-col font-sans antialiased selection:bg-teal-500 selection:text-white relative">
+      {/* Ambulance Loader Overlay */}
+      {isEvaluating && <AmbulanceLoader message="Analyzing your symptoms…" />}
+
       {/* Top Bar Header */}
       <TopBar
         currentView={currentView}
