@@ -79,3 +79,13 @@ export interface InferenceCycleResult {
   evaluatedAt: string;
   symptomAdvice?: SymptomSpecificAdvice[];
 }
+
+export interface UserProfile {
+  fullName: string;
+  age: number;
+  mobileNumber: string;
+  address: string;
+  isAdmin?: boolean;
+}
+
+

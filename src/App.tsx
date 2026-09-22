@@ -1,20 +1,64 @@
 import { useState } from 'react';
+import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { AdminRulesModal } from './components/AdminRulesModal';
 import { ExportReportModal } from './components/ExportReportModal';
 import { LandingView } from './components/LandingView';
+import { LoginView } from './components/LoginView';
 import { SymptomAssessmentView } from './components/SymptomAssessmentView';
 import { TopBar } from './components/TopBar';
 import { TriageResultsView } from './components/TriageResultsView';
+import { SupportedLanguage } from './data/translations';
 import { ForwardChainingEngine } from './engine/ForwardChainingEngine';
+import { AuthService } from './services/AuthService';
+import { LanguageService } from './services/LanguageService';
 import { RuleStorageService } from './services/RuleStorageService';
-import { InferenceCycleResult } from './types';
+import { InferenceCycleResult, UserProfile } from './types';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results' | 'login'>('home');
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => AuthService.getUserProfile());
+  const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(() => LanguageService.getLanguage());
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [inferenceResult, setInferenceResult] = useState<InferenceCycleResult | null>(null);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [showAdminPasscodeModal, setShowAdminPasscodeModal] = useState<boolean>(false);
+
+  const handleLanguageChange = (lang: SupportedLanguage) => {
+    setCurrentLanguage(lang);
+    LanguageService.setLanguage(lang);
+  };
+
+  // Auth / Login handlers
+  const handleLoginSuccess = (profile: UserProfile) => {
+    setUserProfile(profile);
+    setCurrentView('assessment');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setUserProfile(null);
+  };
+
+  const handleAdminAuthSuccess = () => {
+    setShowAdminPasscodeModal(false);
+    setUserProfile((prev) => {
+      const updated: UserProfile = prev
+        ? { ...prev, isAdmin: true }
+        : {
+            fullName: 'Administrator',
+            age: 40,
+            mobileNumber: '+1 (555) 000-0000',
+            address: 'System Administration',
+            isAdmin: true,
+          };
+      AuthService.saveUserProfile(updated);
+      return updated;
+    });
+    setShowAdminModal(true);
+  };
 
   // Toggle symptom selection
   const handleToggleSymptom = (symptomId: string) => {
@@ -54,27 +98,61 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleStartAssessmentClick = () => {
+    if (!userProfile) {
+      setCurrentView('login');
+    } else {
+      setCurrentView('assessment');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F7F9] text-slate-800 flex flex-col font-sans antialiased selection:bg-teal-500 selection:text-white relative">
       {/* Top Bar Header */}
       <TopBar
         currentView={currentView}
+        user={userProfile}
+        currentLanguage={currentLanguage}
+        onLanguageChange={handleLanguageChange}
         onNavigate={(view) => {
           setCurrentView(view);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onOpenAdmin={() => setShowAdminModal(true)}
+        onOpenLogin={() => setCurrentView('login')}
+        onLogout={handleLogout}
       />
 
       {/* Main Views */}
       <main className="flex-1 flex flex-col">
-        {currentView === 'home' && (
-          <LandingView
-            onStartAssessment={() => {
+        {currentView === 'login' && (
+          <LoginView
+            currentUser={userProfile}
+            currentLanguage={currentLanguage}
+            onLoginSuccess={handleLoginSuccess}
+            onContinueAsGuest={() => {
               setCurrentView('assessment');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onOpenAdmin={() => setShowAdminModal(true)}
+            onCancel={() => {
+              setCurrentView('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
+
+        {currentView === 'home' && (
+          <LandingView
+            currentLanguage={currentLanguage}
+            onStartAssessment={handleStartAssessmentClick}
+            onOpenAdmin={() => {
+              if (userProfile?.isAdmin) {
+                setShowAdminModal(true);
+              } else {
+                setShowAdminPasscodeModal(true);
+              }
+            }}
           />
         )}
 
@@ -85,17 +163,32 @@ export default function App() {
             onClearSymptoms={handleClearSymptoms}
             onApplyPreset={handleApplyPreset}
             onEvaluate={handleEvaluateSymptoms}
+            onBack={() => {
+              setCurrentView('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
+
 
         {currentView === 'results' && inferenceResult && (
           <TriageResultsView
             result={inferenceResult}
+            userProfile={userProfile}
             onStartNewAssessment={handleStartNewAssessment}
             onOpenExportModal={() => setShowExportModal(true)}
+            onOpenLogin={() => setCurrentView('login')}
           />
         )}
       </main>
+
+      {/* Admin Passcode Modal */}
+      {showAdminPasscodeModal && (
+        <AdminPasscodeModal
+          onSuccess={handleAdminAuthSuccess}
+          onClose={() => setShowAdminPasscodeModal(false)}
+        />
+      )}
 
       {/* Admin Rules Modal */}
       {showAdminModal && (
@@ -106,10 +199,10 @@ export default function App() {
       {showExportModal && inferenceResult && (
         <ExportReportModal
           result={inferenceResult}
+          userProfile={userProfile}
           onClose={() => setShowExportModal(false)}
         />
       )}
     </div>
   );
 }
-

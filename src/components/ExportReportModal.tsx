@@ -6,17 +6,20 @@ import {
   X,
 } from 'lucide-react';
 import { SYMPTOM_DEFINITIONS } from '../data/symptoms';
-import { InferenceCycleResult } from '../types';
+import { UserProfile, InferenceCycleResult } from '../types';
 
 interface ExportReportModalProps {
   result: InferenceCycleResult;
+  userProfile?: UserProfile | null;
   onClose: () => void;
 }
 
 export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   result,
+  userProfile,
   onClose,
 }) => {
+
   const symptomLabelMap = React.useMemo(() => {
     const map = new Map<string, string>();
     for (const s of SYMPTOM_DEFINITIONS) {
@@ -112,7 +115,23 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
               <p className="text-xs text-slate-500 mt-0.5">
                 Automated clinical decision support evaluation
               </p>
+
+              {/* Patient Details Block */}
+              {userProfile && (
+                <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
+                  <div>
+                    <span className="font-bold text-slate-900">Patient:</span> {userProfile.fullName} ({userProfile.age} yrs)
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900">Mobile:</span> {userProfile.mobileNumber}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="font-bold text-slate-900">Address:</span> {userProfile.address}
+                  </div>
+                </div>
+              )}
             </div>
+
 
             {/* Refined Triage Tier Card */}
             <div
