@@ -17,9 +17,11 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Users,
   Workflow,
 } from 'lucide-react';
 import { SYMPTOM_DEFINITIONS } from '../data/symptoms';
+import { AGE_BRACKET_DISCLAIMER, getAgeBracket } from '../data/ageBrackets';
 import { UserProfile, InferenceCycleResult, TriageSeverity } from '../types';
 
 interface TriageResultsViewProps {
@@ -209,6 +211,59 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
             </div>
           )
         )}
+
+        {/* Age Bracket — Possible Conditions for Your Age Group */}
+        {(() => {
+          const age = userProfile?.age ?? null;
+          const bracket = age !== null ? getAgeBracket(age) : null;
+          if (!bracket) return null;
+          return (
+            <div
+              id="age-bracket-card"
+              className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.04)] overflow-hidden"
+            >
+              {/* Card header */}
+              <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-slate-900 text-sm sm:text-base leading-none">
+                      Possible Conditions for Your Age
+                    </h2>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Age {age} · <span className="font-semibold text-indigo-600">{bracket.label}</span>
+                      {' '}({bracket.minAge}–{bracket.maxAge ?? '60+'} yrs)
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shrink-0 whitespace-nowrap">
+                  {bracket.commonConditions.length} conditions
+                </span>
+              </div>
+
+              {/* Conditions chip grid */}
+              <div className="px-4 sm:px-6 py-4">
+                <div className="flex flex-wrap gap-2">
+                  {bracket.commonConditions.map((condition, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-800 text-xs font-semibold"
+                    >
+                      {condition}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Disclaimer */}
+                <p className="mt-4 text-[11px] text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+                  ⚠️ {AGE_BRACKET_DISCLAIMER}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 2. Primary Recommendation Card */}
 
