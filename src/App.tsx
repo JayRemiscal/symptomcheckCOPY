@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { AdminRulesModal } from './components/AdminRulesModal';
 import { ExportReportModal } from './components/ExportReportModal';
+import { HistoryView } from './components/HistoryView';
 import { LandingView } from './components/LandingView';
 import { LoginView } from './components/LoginView';
 import { SymptomAssessmentView } from './components/SymptomAssessmentView';
@@ -10,12 +11,13 @@ import { TriageResultsView } from './components/TriageResultsView';
 import { SupportedLanguage } from './data/translations';
 import { ForwardChainingEngine } from './engine/ForwardChainingEngine';
 import { AuthService } from './services/AuthService';
+import { HistoryService } from './services/HistoryService';
 import { LanguageService } from './services/LanguageService';
 import { RuleStorageService } from './services/RuleStorageService';
 import { InferenceCycleResult, UserProfile } from './types';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results' | 'login'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'assessment' | 'results' | 'login' | 'history'>('home');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => AuthService.getUserProfile());
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(() => LanguageService.getLanguage());
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -84,6 +86,9 @@ export default function App() {
     const activeRules = RuleStorageService.getAllRules().filter((r) => r.enabled);
     const engine = new ForwardChainingEngine(activeRules);
     const result = engine.evaluate(selectedSymptoms);
+
+    // Auto-save to per-account history
+    HistoryService.saveAssessment(userProfile, result);
 
     setInferenceResult(result);
     setCurrentView('results');
@@ -178,6 +183,19 @@ export default function App() {
             onStartNewAssessment={handleStartNewAssessment}
             onOpenExportModal={() => setShowExportModal(true)}
             onOpenLogin={() => setCurrentView('login')}
+          />
+        )}
+
+        {currentView === 'history' && (
+          <HistoryView
+            profile={userProfile}
+            onStartAssessment={handleStartAssessmentClick}
+            onOpenLogin={() => setCurrentView('login')}
+            onViewResult={(result: InferenceCycleResult) => {
+              setInferenceResult(result);
+              setCurrentView('results');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
       </main>

@@ -1,15 +1,15 @@
 import React from 'react';
-import { Activity, LogOut, LogIn, ShieldCheck } from 'lucide-react';
+import { Activity, ClipboardList, LogOut, LogIn, ShieldCheck } from 'lucide-react';
 import { UserProfile } from '../types';
 import { SupportedLanguage } from '../data/translations';
 import { LanguageSelector } from './LanguageSelector';
 
 interface TopBarProps {
-  currentView: 'home' | 'assessment' | 'results' | 'login';
+  currentView: 'home' | 'assessment' | 'results' | 'login' | 'history';
   user: UserProfile | null;
   currentLanguage: SupportedLanguage;
   onLanguageChange: (lang: SupportedLanguage) => void;
-  onNavigate: (view: 'home' | 'assessment' | 'results' | 'login') => void;
+  onNavigate: (view: 'home' | 'assessment' | 'results' | 'login' | 'history') => void;
   onOpenAdmin: () => void;
   onOpenLogin: () => void;
   onLogout: () => void;
@@ -55,6 +55,21 @@ export const TopBar: React.FC<TopBarProps> = ({
             onLanguageChange={onLanguageChange}
           />
 
+          {/* History Button — visible to all users */}
+          <button
+            id="history-btn"
+            onClick={() => onNavigate('history')}
+            title="Symptoms History"
+            aria-label="Symptoms History"
+            className={`p-1.5 sm:p-2 rounded-xl transition-colors cursor-pointer shrink-0 ${
+              currentView === 'history'
+                ? 'bg-teal-100 text-teal-700 border border-teal-200'
+                : 'text-slate-500 hover:text-teal-600 hover:bg-teal-50'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+
           {/* User Profile / Login status */}
           {user ? (
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -74,7 +89,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   </span>
                 )}
               </button>
-              
+
               <button
                 id="logout-btn"
                 onClick={onLogout}

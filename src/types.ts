@@ -88,4 +88,14 @@ export interface UserProfile {
   isAdmin?: boolean;
 }
 
+export interface HistoryEntry {
+  id: string;
+  savedAt: string; // ISO date string
+  userSnapshot: { fullName: string; age: number };
+  severity: TriageSeverity;
+  primaryTitle: string;
+  symptomsReported: string[]; // human-readable labels
+  result: InferenceCycleResult;
+}
+
 
