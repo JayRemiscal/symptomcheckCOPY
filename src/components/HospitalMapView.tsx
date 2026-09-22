@@ -111,7 +111,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           <span style="font-size:11px;color:#64748b">${h.address}</span>
           ${h.phone ? `<br/><a href="tel:${h.phone}" style="font-size:12px;color:#0d9488;font-weight:bold">📞 ${h.phone}</a>` : ''}
           ${dist ? `<br/><span style="font-size:10px;color:#94a3b8">${dist} away</span>` : ''}
-          <br/><a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}"
+          <br/><a href="https://www.google.com/maps/dir/?api=1&origin=My+Location&destination=${h.lat},${h.lng}&travelmode=driving"
             target="_blank" style="font-size:11px;color:#0d9488;font-weight:bold">🗺 Get Directions</a>
         </div>`;
       const marker = L.marker([h.lat, h.lng], { icon: hospitalIcon })
@@ -192,6 +192,21 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
       markersRef.current[h.id].openPopup();
     }
   };
+
+  // ── Open directions using live GPS as origin ─────────────────
+  const [directionLoadingId, setDirectionLoadingId] = useState<string | null>(null);
+
+  const getDirections = useCallback(async (h: NearbyHospital, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDirectionLoadingId(h.id);
+    const gps = await GeoService.getBrowserLocation();
+    setDirectionLoadingId(null);
+
+    const dest = `${h.lat},${h.lng}`;
+    const origin = gps ? `${gps.lat},${gps.lng}` : 'My+Location';
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
 
   const isLoading = ['locating', 'geocoding', 'searching'].includes(status);
   const showMap   = ['searching', 'done', 'error'].includes(status) && currentGeo !== null;
@@ -348,14 +363,16 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       {dist && <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">{dist}</span>}
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}`}
-                        target="_blank" rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold text-[11px] flex items-center gap-1 transition-colors"
+                      <button
+                        onClick={e => getDirections(h, e)}
+                        disabled={directionLoadingId === h.id}
+                        className="px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 active:bg-teal-200 border border-teal-200 text-teal-700 font-bold text-[11px] flex items-center gap-1 transition-colors disabled:opacity-60 cursor-pointer"
                       >
-                        <Navigation className="w-3 h-3" /> Directions
-                      </a>
+                        {directionLoadingId === h.id
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : <Navigation className="w-3 h-3" />}
+                        {directionLoadingId === h.id ? 'Locating…' : 'Directions'}
+                      </button>
                       {h.website && (
                         <a href={h.website} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
