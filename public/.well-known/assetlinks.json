@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.symptomcheck1.twa",
+    "sha256_cert_fingerprints": ["A0:84:53:0D:01:BA:04:23:DB:D4:E7:B0:55:B9:9B:7B:7A:22:8F:B6:20:EA:92:D8:91:90:3C:A3:24:78:8F:C1"]
+  }
+}]
