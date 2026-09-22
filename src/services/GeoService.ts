@@ -11,7 +11,7 @@ export interface NearbyHospital {
   address: string;
   phone?: string;
   website?: string;
-  emergency?: string; // 'yes' | 'no'
+  emergency?: string;
   distanceKm?: number;
 }
 
@@ -22,7 +22,6 @@ function toRad(deg: number) {
   return (deg * Math.PI) / 180;
 }
 
-/** Haversine distance in km */
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = toRad(lat2 - lat1);
@@ -34,7 +33,7 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 }
 
 export class GeoService {
-  /** Convert a text address to lat/lng using OpenStreetMap Nominatim. */
+  /** Geocode a text address → {lat, lng} via Nominatim. */
   static async geocodeAddress(address: string): Promise<GeoCoordinate | null> {
     try {
       const params = new URLSearchParams({
@@ -48,31 +47,48 @@ export class GeoService {
       if (!res.ok) return null;
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) return null;
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      const lat = parseFloat(data[0].lat);
+      const lng = parseFloat(data[0].lon);
+      if (isNaN(lat) || isNaN(lng)) return null;
+      return { lat, lng };
     } catch {
       return null;
     }
   }
 
-  /**
-   * Find hospitals/clinics near the given coordinates using the Overpass API.
-   * Default radius: 10 km.
-   */
+  /** Get browser geolocation (fallback when address geocoding fails). */
+  static getBrowserLocation(): Promise<GeoCoordinate | null> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) { resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 8000 }
+      );
+    });
+  }
+
+  /** Find hospitals/clinics near coordinates using Overpass API. */
   static async findNearbyHospitals(
     lat: number,
     lng: number,
-    radiusM = 10000
+    radiusM = 15000
   ): Promise<NearbyHospital[]> {
+    // Broad query — catches hospitals, clinics, and health centres
     const query = `
-      [out:json][timeout:30];
-      (
-        node["amenity"="hospital"](around:${radiusM},${lat},${lng});
-        way["amenity"="hospital"](around:${radiusM},${lat},${lng});
-        node["amenity"="clinic"](around:${radiusM},${lat},${lng});
-        node["healthcare"="hospital"](around:${radiusM},${lat},${lng});
-      );
-      out center;
-    `.trim();
+[out:json][timeout:30];
+(
+  node["amenity"="hospital"](around:${radiusM},${lat},${lng});
+  way["amenity"="hospital"](around:${radiusM},${lat},${lng});
+  relation["amenity"="hospital"](around:${radiusM},${lat},${lng});
+  node["amenity"="clinic"](around:${radiusM},${lat},${lng});
+  way["amenity"="clinic"](around:${radiusM},${lat},${lng});
+  node["amenity"="health_centre"](around:${radiusM},${lat},${lng});
+  node["healthcare"="hospital"](around:${radiusM},${lat},${lng});
+  node["healthcare"="clinic"](around:${radiusM},${lat},${lng});
+);
+out center tags;
+`.trim();
 
     try {
       const res = await fetch(OVERPASS_URL, {
@@ -82,42 +98,67 @@ export class GeoService {
       });
       if (!res.ok) return [];
       const json = await res.json();
+      const elements: Record<string, unknown>[] = json.elements ?? [];
 
-      const hospitals: NearbyHospital[] = (json.elements ?? [])
-        .filter((el: Record<string, unknown>) => el.tags)
-        .map((el: Record<string, unknown>) => {
-          const tags = el.tags as Record<string, string>;
-          const elLat =
-            (el.lat as number) ??
-            ((el.center as Record<string, number>)?.lat ?? 0);
-          const elLng =
-            (el.lon as number) ??
-            ((el.center as Record<string, number>)?.lon ?? 0);
+      const hospitals: NearbyHospital[] = elements
+        .map((el) => {
+          const tags = (el.tags ?? {}) as Record<string, string>;
 
-          const addressParts = [
+          // Resolve coordinates — nodes have lat/lon directly, ways/relations have center
+          const center = el.center as Record<string, number> | undefined;
+          const elLat = typeof el.lat === 'number' ? (el.lat as number) : (center?.lat ?? 0);
+          const elLng = typeof el.lon === 'number' ? (el.lon as number) : (center?.lon ?? 0);
+
+          // Skip elements with invalid coordinates
+          if (!elLat || !elLng) return null;
+
+          // Build a readable name — many PH hospitals only have english names
+          const name =
+            tags['name:en'] ??
+            tags.name ??
+            tags['name:fil'] ??
+            tags['name:tl'] ??
+            tags['operator'] ??
+            `${tags.amenity ?? 'Hospital'} (unnamed)`;
+
+          // Build address from parts available
+          const addrParts = [
             tags['addr:housenumber'],
             tags['addr:street'],
-            tags['addr:city'] ?? tags['addr:town'],
+            tags['addr:barangay'],
+            tags['addr:city'] ?? tags['addr:town'] ?? tags['addr:municipality'],
+            tags['addr:province'],
           ].filter(Boolean);
+          const address =
+            addrParts.length > 0
+              ? addrParts.join(', ')
+              : tags['addr:full'] ?? 'Address not available';
 
           return {
             id: String(el.id),
-            name: tags.name ?? tags['name:en'] ?? 'Unnamed Hospital',
+            name,
             lat: elLat,
             lng: elLng,
-            address: addressParts.join(' ') || tags['addr:full'] || 'Address not available',
-            phone: tags.phone ?? tags['contact:phone'],
+            address,
+            phone: tags.phone ?? tags['contact:phone'] ?? tags['phone:PH'],
             website: tags.website ?? tags['contact:website'],
             emergency: tags.emergency,
             distanceKm: haversine(lat, lng, elLat, elLng),
           } as NearbyHospital;
         })
-        .filter((h: NearbyHospital) => h.name !== 'Unnamed Hospital' || h.phone)
-        .sort((a: NearbyHospital, b: NearbyHospital) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99))
-        .slice(0, 20);
+        .filter((h): h is NearbyHospital => h !== null)
+        // Remove exact duplicates by lat/lng
+        .filter(
+          (h, idx, arr) =>
+            arr.findIndex((x) => x.lat === h.lat && x.lng === h.lng) === idx
+        )
+        // Sort nearest first
+        .sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99))
+        .slice(0, 25);
 
       return hospitals;
-    } catch {
+    } catch (e) {
+      console.error('GeoService.findNearbyHospitals error:', e);
       return [];
     }
   }
