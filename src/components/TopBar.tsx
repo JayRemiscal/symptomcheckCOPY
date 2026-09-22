@@ -166,22 +166,19 @@ export const TopBar: React.FC<TopBarProps> = ({
                 {/* ── Menu items ── */}
                 <div className="py-1.5">
 
-                  {/* Edit Profile / Sign In */}
-                  <button
-                    id="menu-profile-btn"
-                    onClick={() => { onOpenLogin(); close(); }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-slate-50 transition-colors cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-semibold text-slate-700">
-                      {user ? 'Edit Profile' : 'Sign In'}
-                    </span>
-                    {!user && (
-                      <LogIn className="w-3.5 h-3.5 text-teal-500 ml-auto" />
-                    )}
-                  </button>
+                  {/* Edit Profile — only shown when logged in */}
+                  {user && (
+                    <button
+                      id="menu-profile-btn"
+                      onClick={() => { onOpenLogin(); close(); }}
+                      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">Edit Profile</span>
+                    </button>
+                  )}
 
                   {/* Symptoms History */}
                   <button
