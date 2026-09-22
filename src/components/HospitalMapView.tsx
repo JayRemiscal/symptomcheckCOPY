@@ -18,37 +18,33 @@ import {
 import { UserProfile } from '../types';
 import { GeoCoordinate, GeoService, NearbyHospital } from '../services/GeoService';
 
-// Fix Leaflet default icon paths in Vite
+// Fix Leaflet marker icon paths broken by Vite bundling
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
 const hospitalIcon = L.divIcon({
   className: '',
-  html: `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#b91c1c);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;">🏥</div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -36],
+  html: `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#b91c1c);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:15px">🏥</div>`,
+  iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -36],
 });
 
 const userIcon = L.divIcon({
   className: '',
-  html: `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0d9488,#0f766e);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 28],
-  popupAnchor: [0, -32],
+  html: `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0d9488,#0f766e);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:14px">📍</div>`,
+  iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -32],
 });
 
 const EMERGENCY_CONTACTS = [
-  { label: 'National Emergency Hotline', number: '911',              icon: '🚨' },
-  { label: 'Philippine Red Cross',       number: '143',              icon: '🩸' },
-  { label: 'PNP (Police)',               number: '117',              icon: '👮' },
-  { label: 'BFP (Fire)',                 number: '160',              icon: '🚒' },
-  { label: 'NDRRMC',                     number: '1-800-1000-5990',  icon: '⚠️' },
-  { label: 'DOH Hotline',               number: '1555',             icon: '🏥' },
+  { label: 'National Emergency Hotline', number: '911',             icon: '🚨' },
+  { label: 'Philippine Red Cross',       number: '143',             icon: '🩸' },
+  { label: 'PNP (Police)',               number: '117',             icon: '👮' },
+  { label: 'BFP (Fire)',                 number: '160',             icon: '🚒' },
+  { label: 'NDRRMC',                     number: '1-800-1000-5990', icon: '⚠️' },
+  { label: 'DOH Hotline',               number: '1555',            icon: '🏥' },
 ];
 
 interface HospitalMapViewProps {
@@ -57,24 +53,34 @@ interface HospitalMapViewProps {
   onStartAssessment: () => void;
 }
 
+type Status = 'idle' | 'locating' | 'geocoding' | 'searching' | 'done' | 'error';
+
 export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpenLogin }) => {
-  const mapRef           = useRef<L.Map | null>(null);
-  const mapContainerRef  = useRef<HTMLDivElement>(null);
-  const markersRef       = useRef<Record<string, L.Marker>>({});
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef          = useRef<L.Map | null>(null);
+  const markersRef      = useRef<Record<string, L.Marker>>({});
 
-  const [hospitals,    setHospitals]    = useState<NearbyHospital[]>([]);
-  const [selectedId,   setSelectedId]   = useState<string | null>(null);
-  const [status,       setStatus]       = useState<'idle'|'locating'|'geocoding'|'searching'|'done'|'error'>('idle');
-  const [errorMsg,     setErrorMsg]     = useState('');
-  const [manualAddr,   setManualAddr]   = useState('');
-  const [locationSrc,  setLocationSrc]  = useState('');   // human-readable label for what was searched
+  // ── State ──────────────────────────────────────────────────
+  const [currentGeo,  setCurrentGeo]  = useState<GeoCoordinate | null>(null);
+  const [hospitals,   setHospitals]   = useState<NearbyHospital[]>([]);
+  const [selectedId,  setSelectedId]  = useState<string | null>(null);
+  const [status,      setStatus]      = useState<Status>('idle');
+  const [errorMsg,    setErrorMsg]    = useState('');
+  const [manualAddr,  setManualAddr]  = useState('');
+  const [locationSrc, setLocationSrc] = useState('');
 
-  // ── Build / rebuild map ──────────────────────────────────────
-  const buildMap = useCallback((center: GeoCoordinate) => {
-    if (!mapContainerRef.current) return;
+  // ── Initialize / re-center map whenever currentGeo changes ──
+  // This runs AFTER React re-renders, so the div ref is always valid.
+  useEffect(() => {
+    if (!currentGeo || !mapContainerRef.current) return;
+
+    // Destroy old map instance
     if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
 
-    const map = L.map(mapContainerRef.current, { center: [center.lat, center.lng], zoom: 14 });
+    const map = L.map(mapContainerRef.current, {
+      center: [currentGeo.lat, currentGeo.lng],
+      zoom: 14,
+    });
     mapRef.current = map;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -82,24 +88,25 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
       maxZoom: 19,
     }).addTo(map);
 
-    L.marker([center.lat, center.lng], { icon: userIcon })
+    L.marker([currentGeo.lat, currentGeo.lng], { icon: userIcon })
       .addTo(map)
       .bindPopup('<b>📍 Your Location</b>')
       .openPopup();
-  }, []);
+  }, [currentGeo]);
 
-  // ── Add hospital markers ─────────────────────────────────────
-  const addMarkers = useCallback((list: NearbyHospital[]) => {
-    if (!mapRef.current) return;
+  // ── Add markers whenever hospitals list changes ──────────────
+  useEffect(() => {
+    if (!mapRef.current || hospitals.length === 0) return;
+
     Object.values(markersRef.current).forEach(m => m.remove());
     markersRef.current = {};
 
-    list.forEach(h => {
+    hospitals.forEach(h => {
       const dist = h.distanceKm !== undefined
         ? (h.distanceKm < 1 ? `${(h.distanceKm * 1000).toFixed(0)} m` : `${h.distanceKm.toFixed(1)} km`)
         : '';
       const popup = `
-        <div style="min-width:180px;font-family:sans-serif;line-height:1.5">
+        <div style="min-width:175px;font-family:sans-serif;line-height:1.5">
           <b style="font-size:13px;color:#0f172a">${h.name}</b><br/>
           <span style="font-size:11px;color:#64748b">${h.address}</span>
           ${h.phone ? `<br/><a href="tel:${h.phone}" style="font-size:12px;color:#0d9488;font-weight:bold">📞 ${h.phone}</a>` : ''}
@@ -112,35 +119,40 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
         .bindPopup(popup);
       markersRef.current[h.id] = marker;
     });
-  }, []);
 
-  // ── Core search ──────────────────────────────────────────────
-  const runSearch = useCallback(async (geo: GeoCoordinate, label: string) => {
+    // Fit bounds
+    if (currentGeo) {
+      const bounds = L.latLngBounds([
+        [currentGeo.lat, currentGeo.lng],
+        ...hospitals.slice(0, 10).map(h => [h.lat, h.lng] as [number, number]),
+      ]);
+      mapRef.current.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }, [hospitals, currentGeo]);
+
+  // ── Cleanup on unmount ───────────────────────────────────────
+  useEffect(() => () => { mapRef.current?.remove(); mapRef.current = null; }, []);
+
+  // ── Core: fetch hospitals for a given coordinate ─────────────
+  const fetchHospitals = useCallback(async (geo: GeoCoordinate, label: string) => {
+    setCurrentGeo(geo);      // triggers map init useEffect on next render
+    setLocationSrc(label);
     setStatus('searching');
     setErrorMsg('');
-    setLocationSrc(label);
-    buildMap(geo);
+    setHospitals([]);
 
     const list = await GeoService.findNearbyHospitals(geo.lat, geo.lng);
-    setHospitals(list);
-    addMarkers(list);
 
     if (list.length === 0) {
       setStatus('error');
-      setErrorMsg('No hospitals found within 15 km. Try a different address or use GPS location.');
+      setErrorMsg('No hospitals found within 15 km. Try a different address or use your GPS.');
     } else {
+      setHospitals(list);
       setStatus('done');
-      if (mapRef.current) {
-        const bounds = L.latLngBounds([
-          [geo.lat, geo.lng],
-          ...list.slice(0, 10).map(h => [h.lat, h.lng] as [number, number]),
-        ]);
-        mapRef.current.fitBounds(bounds, { padding: [40, 40] });
-      }
     }
-  }, [buildMap, addMarkers]);
+  }, []);
 
-  // ── Search by typed address ──────────────────────────────────
+  // ── Search by address text ───────────────────────────────────
   const searchByAddress = useCallback(async (address: string) => {
     if (!address.trim()) return;
     setStatus('geocoding');
@@ -148,31 +160,28 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
     const geo = await GeoService.geocodeAddress(address);
     if (!geo) {
       setStatus('error');
-      setErrorMsg(`Could not locate "${address}". Try adding a city, province, or country.`);
+      setErrorMsg(`Could not locate "${address}". Try adding a city, province, or country name.`);
       return;
     }
-    await runSearch(geo, address);
-  }, [runSearch]);
+    await fetchHospitals(geo, address);
+  }, [fetchHospitals]);
 
-  // ── Use GPS / browser location ───────────────────────────────
+  // ── GPS location ─────────────────────────────────────────────
   const useGPS = useCallback(async () => {
     setStatus('locating');
     setErrorMsg('');
     const geo = await GeoService.getBrowserLocation();
     if (!geo) {
       setStatus('error');
-      setErrorMsg('GPS location not available. Please type your address manually.');
+      setErrorMsg('GPS location unavailable. Please type your address manually.');
       return;
     }
-    await runSearch(geo, 'Your GPS Location');
-  }, [runSearch]);
+    await fetchHospitals(geo, 'Your GPS Location');
+  }, [fetchHospitals]);
 
   // ── Auto-search on mount ─────────────────────────────────────
   useEffect(() => {
-    if (profile?.address) {
-      searchByAddress(profile.address);
-    }
-    return () => { mapRef.current?.remove(); mapRef.current = null; };
+    if (profile?.address) searchByAddress(profile.address);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -184,7 +193,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
     }
   };
 
-  const isLoading = ['locating','geocoding','searching'].includes(status);
+  const isLoading = ['locating', 'geocoding', 'searching'].includes(status);
+  const showMap   = ['searching', 'done', 'error'].includes(status) && currentGeo !== null;
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-60px)] bg-[#F4F7F9]">
@@ -192,6 +202,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
       {/* ── Header ── */}
       <div className="bg-white border-b border-slate-200/70 px-4 sm:px-6 py-4 sticky top-[60px] z-20 shadow-[0_2px_8px_-3px_rgba(15,23,42,0.05)]">
         <div className="max-w-3xl mx-auto space-y-3">
+
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
               <Hospital className="w-4 h-4" />
@@ -222,7 +233,6 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
               <span className="hidden sm:inline">Search</span>
             </button>
-            {/* GPS Button */}
             <button
               onClick={useGPS}
               disabled={isLoading}
@@ -238,17 +248,18 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           {isLoading && (
             <p className="text-xs text-teal-600 font-medium flex items-center gap-1.5">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {status === 'locating'   && 'Getting GPS location…'}
-              {status === 'geocoding'  && 'Locating address…'}
-              {status === 'searching'  && 'Searching for nearby hospitals…'}
+              {status === 'locating'  && 'Getting GPS location…'}
+              {status === 'geocoding' && 'Locating address…'}
+              {status === 'searching' && 'Searching for nearby hospitals…'}
             </p>
           )}
         </div>
       </div>
 
+      {/* ── Content ── */}
       <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-4 space-y-4">
 
-        {/* ── Guest prompt (idle, no profile) ── */}
+        {/* Guest prompt */}
         {!profile && status === 'idle' && (
           <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-slate-900 rounded-2xl p-4 text-white flex items-start justify-between gap-4">
             <div>
@@ -256,36 +267,28 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
                 Guest Mode
               </span>
               <h2 className="font-bold text-sm mt-1.5">Sign in to auto-fill your address</h2>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Or type an address above / tap <b>GPS</b> to detect automatically.
-              </p>
+              <p className="text-xs text-slate-300 mt-0.5">Or type an address / tap GPS above.</p>
             </div>
-            <button
-              onClick={onOpenLogin}
-              className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer"
-            >
+            <button onClick={onOpenLogin}
+              className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer">
               Sign In
             </button>
           </div>
         )}
 
-        {/* ── Error ── */}
+        {/* Error */}
         {status === 'error' && (
           <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
             <SearchX className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-bold text-rose-800">{errorMsg}</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <button
-                  onClick={() => setStatus('idle')}
-                  className="text-xs font-bold text-rose-600 flex items-center gap-1 cursor-pointer hover:underline"
-                >
+              <div className="flex flex-wrap gap-3 mt-2">
+                <button onClick={() => setStatus('idle')}
+                  className="text-xs font-bold text-rose-600 flex items-center gap-1 cursor-pointer hover:underline">
                   <RefreshCw className="w-3 h-3" /> Try again
                 </button>
-                <button
-                  onClick={useGPS}
-                  className="text-xs font-bold text-indigo-600 flex items-center gap-1 cursor-pointer hover:underline"
-                >
+                <button onClick={useGPS}
+                  className="text-xs font-bold text-indigo-600 flex items-center gap-1 cursor-pointer hover:underline">
                   <Crosshair className="w-3 h-3" /> Use GPS instead
                 </button>
               </div>
@@ -293,14 +296,12 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           </div>
         )}
 
-        {/* ── Map ── */}
-        {(status === 'searching' || status === 'done' || status === 'error') && (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] overflow-hidden">
-            <div ref={mapContainerRef} style={{ height: 280, zIndex: 1 }} className="w-full" />
-          </div>
-        )}
+        {/* Map — ALWAYS mounted in DOM so ref is valid; shown/hidden via CSS */}
+        <div className={`bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] overflow-hidden transition-all ${showMap ? 'block' : 'hidden'}`}>
+          <div ref={mapContainerRef} style={{ height: 300, zIndex: 1 }} className="w-full" />
+        </div>
 
-        {/* ── Hospital list ── */}
+        {/* Hospital list */}
         {hospitals.length > 0 && (
           <div className="space-y-2">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 px-1 flex items-center gap-1.5">
@@ -310,12 +311,12 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
 
             {hospitals.map(h => {
               const dist = h.distanceKm !== undefined
-                ? (h.distanceKm < 1 ? `${(h.distanceKm * 1000).toFixed(0)} m` : `${h.distanceKm.toFixed(1)} km`)
+                ? (h.distanceKm < 1
+                    ? `${(h.distanceKm * 1000).toFixed(0)} m`
+                    : `${h.distanceKm.toFixed(1)} km`)
                 : null;
               return (
-                <div
-                  key={h.id}
-                  onClick={() => flyTo(h)}
+                <div key={h.id} onClick={() => flyTo(h)}
                   className={`bg-white rounded-2xl border p-4 cursor-pointer transition-all shadow-[0_2px_8px_-3px_rgba(15,23,42,0.06)] ${
                     selectedId === h.id
                       ? 'border-teal-400 ring-2 ring-teal-500/20'
@@ -332,11 +333,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
                           <span className="truncate">{h.address}</span>
                         </p>
                         {h.phone && (
-                          <a
-                            href={`tel:${h.phone}`}
-                            onClick={e => e.stopPropagation()}
-                            className="text-[11px] text-teal-600 font-bold mt-0.5 flex items-center gap-1 hover:underline"
-                          >
+                          <a href={`tel:${h.phone}`} onClick={e => e.stopPropagation()}
+                            className="text-[11px] text-teal-600 font-bold mt-0.5 flex items-center gap-1 hover:underline">
                             <Phone className="w-3 h-3" /> {h.phone}
                           </a>
                         )}
@@ -349,26 +347,19 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      {dist && (
-                        <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">{dist}</span>
-                      )}
+                      {dist && <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">{dist}</span>}
                       <a
                         href={`https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        target="_blank" rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
                         className="px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold text-[11px] flex items-center gap-1 transition-colors"
                       >
                         <Navigation className="w-3 h-3" /> Directions
                       </a>
                       {h.website && (
-                        <a
-                          href={h.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <a href={h.website} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="text-[10px] text-slate-400 hover:text-teal-600 flex items-center gap-0.5"
-                        >
+                          className="text-[10px] text-slate-400 hover:text-teal-600 flex items-center gap-0.5">
                           <Globe className="w-2.5 h-2.5" /> Website <ExternalLink className="w-2.5 h-2.5" />
                         </a>
                       )}
@@ -380,7 +371,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           </div>
         )}
 
-        {/* ── Emergency Contacts ── */}
+        {/* Emergency Contacts */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] overflow-hidden">
           <div className="px-4 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
@@ -394,11 +385,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
 
           <div className="divide-y divide-slate-100">
             {EMERGENCY_CONTACTS.map(c => (
-              <a
-                key={c.number}
-                href={`tel:${c.number}`}
-                className="flex items-center justify-between px-4 py-3.5 hover:bg-slate-50 transition-colors group"
-              >
+              <a key={c.number} href={`tel:${c.number}`}
+                className="flex items-center justify-between px-4 py-3.5 hover:bg-slate-50 transition-colors group">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{c.icon}</span>
                   <span className="text-sm font-semibold text-slate-700 group-hover:text-teal-700 transition-colors">{c.label}</span>
@@ -416,7 +404,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
             <div className="flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-              <span>Hospital data from OpenStreetMap. Contact details may not be current. Always verify before an emergency.</span>
+              <span>Hospital data from OpenStreetMap. Contact details may not always be current. Always verify before an emergency.</span>
             </div>
           </div>
         </div>
