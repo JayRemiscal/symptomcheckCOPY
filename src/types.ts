@@ -82,6 +82,8 @@ export interface InferenceCycleResult {
 
 export interface UserProfile {
   fullName: string;
+  birthdate: string;
+  gender: string;
   age: number;
   mobileNumber: string;
   address: string;

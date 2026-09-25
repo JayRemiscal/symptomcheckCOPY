@@ -21,7 +21,7 @@ import {
   Workflow,
 } from 'lucide-react';
 import { SYMPTOM_DEFINITIONS } from '../data/symptoms';
-import { AGE_BRACKET_DISCLAIMER, getAgeBracket } from '../data/ageBrackets';
+import { AGE_BRACKET_DISCLAIMER, getAgeBracket, getConditionsForProfile } from '../data/ageBrackets';
 import { UserProfile, InferenceCycleResult, TriageSeverity } from '../types';
 
 interface TriageResultsViewProps {
@@ -125,9 +125,6 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                   >
                     {currentTheme.categoryLabel}
                   </span>
-                  <span className={`text-[10px] sm:text-xs opacity-90 font-mono whitespace-nowrap ${currentTheme.subtextClass}`}>
-                    {result.executionTimeMs}ms • {result.passesCount} Passes
-                  </span>
                 </div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight mt-1.5 leading-tight">
                   {currentTheme.tagline}
@@ -170,7 +167,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                     {userProfile.fullName}
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
-                    {userProfile.age} yrs old
+                    {userProfile.age} yrs old ({userProfile.gender})
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -214,58 +211,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
           )
         )}
 
-        {/* Age Bracket — Possible Conditions for Your Age Group */}
-        {(() => {
-          const age = userProfile?.age ?? null;
-          const bracket = age !== null ? getAgeBracket(age) : null;
-          if (!bracket) return null;
-          return (
-            <div
-              id="age-bracket-card"
-              className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.04)] overflow-hidden"
-            >
-              {/* Card header */}
-              <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="font-bold text-slate-900 text-sm sm:text-base leading-none">
-                      Possible Conditions for Your Age
-                    </h2>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Age {age} · <span className="font-semibold text-indigo-600">{bracket.label}</span>
-                      {' '}({bracket.minAge}–{bracket.maxAge ?? '60+'} yrs)
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shrink-0 whitespace-nowrap">
-                  {bracket.commonConditions.length} conditions
-                </span>
-              </div>
 
-              {/* Conditions chip grid */}
-              <div className="px-4 sm:px-6 py-4">
-                <div className="flex flex-wrap gap-2">
-                  {bracket.commonConditions.map((condition, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-800 text-xs font-semibold"
-                    >
-                      {condition}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Disclaimer */}
-                <p className="mt-4 text-[11px] text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
-                  ⚠️ {AGE_BRACKET_DISCLAIMER}
-                </p>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* 2. Primary Recommendation Card */}
 
@@ -526,9 +472,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                         <span className="text-teal-300 font-bold">
                           Assigned Triage Tier: {severity.toUpperCase()}
                         </span>
-                        <span className="text-[11px] text-slate-400">
-                          Evaluated in {result.executionTimeMs}ms
-                        </span>
+
                       </div>
                       <p className="text-slate-200 text-xs leading-relaxed">
                         {primaryTriage.title}
@@ -607,17 +551,65 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                 </div>
               )}
 
-              {/* Metadata Footer */}
-              <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-teal-600" />
-                  On-device processing in {result.executionTimeMs} ms
-                </span>
-                <span>Decision completed in {result.passesCount} evaluation passes</span>
-              </div>
+
             </div>
           )}
         </div>
+        
+        {/* Age Bracket — Possible Conditions for Your Age Group */}
+        {(() => {
+          const age = userProfile?.age ?? null;
+          const gender = userProfile?.gender ?? '';
+          const bracket = age !== null ? getAgeBracket(age) : null;
+          if (!bracket) return null;
+          const conditions = getConditionsForProfile(age, gender);
+          return (
+            <div
+              id="age-bracket-card"
+              className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.04)] overflow-hidden"
+            >
+              {/* Card header */}
+              <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-slate-900 text-sm sm:text-base leading-none">
+                      Possible Conditions for Your Profile
+                    </h2>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {gender} · Age {age} · <span className="font-semibold text-indigo-600">{bracket.label}</span>
+                      {' '}({bracket.minAge}–{bracket.maxAge ?? '60+'} yrs)
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold shrink-0 whitespace-nowrap">
+                  {conditions.length} conditions
+                </span>
+              </div>
+
+              {/* Conditions chip grid */}
+              <div className="px-4 sm:px-6 py-4">
+                <div className="flex flex-wrap gap-2">
+                  {conditions.map((condition, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-800 text-xs font-semibold"
+                    >
+                      {condition}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Disclaimer */}
+                <p className="mt-4 text-[11px] text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+                  ⚠️ {AGE_BRACKET_DISCLAIMER}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 4. Action Buttons Sticky Footer */}

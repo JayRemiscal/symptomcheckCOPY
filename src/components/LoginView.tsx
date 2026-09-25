@@ -36,7 +36,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
 
   const [fullName, setFullName] = useState<string>(currentUser?.fullName || '');
-  const [age, setAge] = useState<string>(currentUser?.age ? String(currentUser.age) : '');
+  const [birthdate, setBirthdate] = useState<string>(currentUser?.birthdate || '');
+  const [gender, setGender] = useState<string>(currentUser?.gender || '');
   const [mobileNumber, setMobileNumber] = useState<string>(currentUser?.mobileNumber || '');
   const [address, setAddress] = useState<string>(currentUser?.address || '');
   const [isAdmin, setIsAdmin] = useState<boolean>(currentUser?.isAdmin || AuthService.isAdminLoggedIn());
@@ -47,7 +48,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
   // Demo user preset for single-click auto-fill
   const handleQuickFillDemo = (asAdmin = false) => {
     setFullName(asAdmin ? 'Dr. Alex Vance (Admin)' : 'Sarah Jenkins');
-    setAge(asAdmin ? '42' : '34');
+    setBirthdate(asAdmin ? '1982-05-14' : '1990-08-22');
+    setGender(asAdmin ? 'Male' : 'Female');
     setMobileNumber(asAdmin ? '+1 (555) 987-6543' : '+1 (555) 234-5678');
     setAddress(asAdmin ? 'Medical Admin Center, Suite 100, San Francisco, CA' : '742 Evergreen Terrace, Springfield, IL 62704');
     if (asAdmin) {
@@ -60,10 +62,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const parsedAge = parseInt(age, 10);
     const candidateProfile = {
       fullName,
-      age: isNaN(parsedAge) ? '' : parsedAge,
+      birthdate,
+      gender,
       mobileNumber,
       address,
     };
@@ -82,9 +84,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
       return;
     }
 
+    const birthDateObj = new Date(birthdate);
+    let calculatedAge = new Date().getFullYear() - birthDateObj.getFullYear();
+    const m = new Date().getMonth() - birthDateObj.getMonth();
+    if (m < 0 || (m === 0 && new Date().getDate() < birthDateObj.getDate())) {
+        calculatedAge--;
+    }
+
     const validProfile: UserProfile = {
       fullName: fullName.trim(),
-      age: parsedAge,
+      birthdate,
+      gender,
+      age: calculatedAge,
       mobileNumber: mobileNumber.trim(),
       address: address.trim(),
       isAdmin,
@@ -179,39 +190,74 @@ export const LoginView: React.FC<LoginViewProps> = ({
             )}
           </div>
 
-          {/* Field 2: Age */}
-          <div>
-            <label htmlFor="age" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Age <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Calendar className="w-4 h-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Field 2: Birthdate */}
+            <div>
+              <label htmlFor="birthdate" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Birthdate <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <input
+                  type="date"
+                  id="birthdate"
+                  name="birthdate"
+                  value={birthdate}
+                  onChange={(e) => {
+                    setBirthdate(e.target.value);
+                    if (errors.birthdate) setErrors((prev) => ({ ...prev, birthdate: '' }));
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-2xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 transition-all ${errors.birthdate
+                    ? 'border-rose-400 bg-rose-50/20 focus:ring-rose-400/40'
+                    : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 focus:bg-white'
+                    }`}
+                />
               </div>
-              <input
-                type="number"
-                id="age"
-                name="age"
-                min="1"
-                max="120"
-                value={age}
-                onChange={(e) => {
-                  setAge(e.target.value);
-                  if (errors.age) setErrors((prev) => ({ ...prev, age: '' }));
-                }}
-                placeholder="e.g. 35"
-                className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-2xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${errors.age
-                  ? 'border-rose-400 bg-rose-50/20 focus:ring-rose-400/40'
-                  : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 focus:bg-white'
-                  }`}
-              />
+              {errors.birthdate && (
+                <p className="mt-1 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errors.birthdate}</span>
+                </p>
+              )}
             </div>
-            {errors.age && (
-              <p className="mt-1 text-xs text-rose-600 flex items-center gap-1 font-medium">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>{errors.age}</span>
-              </p>
-            )}
+
+            {/* Field 2.5: Gender */}
+            <div>
+              <label htmlFor="gender" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Gender <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={gender}
+                  onChange={(e) => {
+                    setGender(e.target.value);
+                    if (errors.gender) setErrors((prev) => ({ ...prev, gender: '' }));
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-2xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 transition-all appearance-none ${errors.gender
+                    ? 'border-rose-400 bg-rose-50/20 focus:ring-rose-400/40'
+                    : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 focus:bg-white'
+                    }`}
+                >
+                  <option value="" disabled>Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              {errors.gender && (
+                <p className="mt-1 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errors.gender}</span>
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Field 3: Registered Mobile Number */}

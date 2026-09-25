@@ -12,6 +12,8 @@ export class AuthService {
       if (
         parsed &&
         typeof parsed.fullName === 'string' &&
+        typeof parsed.birthdate === 'string' &&
+        typeof parsed.gender === 'string' &&
         typeof parsed.age === 'number' &&
         typeof parsed.mobileNumber === 'string' &&
         typeof parsed.address === 'string'
@@ -74,7 +76,8 @@ export class AuthService {
 
   public static validateUserProfile(profile: {
     fullName?: string;
-    age?: number | string;
+    birthdate?: string;
+    gender?: string;
     mobileNumber?: string;
     address?: string;
   }): { valid: boolean; errors: Record<string, string> } {
@@ -87,10 +90,24 @@ export class AuthService {
       errors.fullName = 'Full name must be at least 2 characters.';
     }
 
-    // Validate Age
-    const ageNum = typeof profile.age === 'number' ? profile.age : parseInt(String(profile.age || ''), 10);
-    if (isNaN(ageNum) || ageNum <= 0 || ageNum > 120) {
-      errors.age = 'Please enter a valid age between 1 and 120.';
+    // Validate Birthdate
+    if (!profile.birthdate) {
+      errors.birthdate = 'Birthdate is required.';
+    } else {
+      const date = new Date(profile.birthdate);
+      if (isNaN(date.getTime())) {
+        errors.birthdate = 'Please enter a valid birthdate.';
+      } else {
+        const age = new Date().getFullYear() - date.getFullYear();
+        if (age < 0 || age > 120) {
+          errors.birthdate = 'Please enter a valid birthdate (Age must be between 0 and 120).';
+        }
+      }
+    }
+
+    // Validate Gender
+    if (!profile.gender || profile.gender.trim().length === 0) {
+      errors.gender = 'Gender is required.';
     }
 
     // Validate Registered Mobile Number

@@ -125,19 +125,6 @@ export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
                 </p>
               </div>
 
-              {/* Quick Reset Action if items selected */}
-              {selectedSymptoms.length > 0 && (
-                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                  <button
-                    id="btn-clear-all-symptoms"
-                    onClick={onClearSymptoms}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all whitespace-nowrap active:scale-95"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                    Reset ({selectedSymptoms.length})
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Quick Clinical Simulation Presets */}
