@@ -47,7 +47,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   // Demo user preset for single-click auto-fill
   const handleQuickFillDemo = (asAdmin = false) => {
-    setFullName(asAdmin ? 'Dr. Alex Vance (Admin)' : 'Sarah Jenkins');
+    setFullName(asAdmin ? 'Ivan Carl M. Graciano (Admin)' : 'Ivan Carl M. Graciano');
     setBirthdate(asAdmin ? '1982-05-14' : '1990-08-22');
     setGender(asAdmin ? 'Male' : 'Female');
     setMobileNumber(asAdmin ? '+1 (555) 987-6543' : '+1 (555) 234-5678');
@@ -90,7 +90,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     let calculatedAge = new Date().getFullYear() - birthDateObj.getFullYear();
     const m = new Date().getMonth() - birthDateObj.getMonth();
     if (m < 0 || (m === 0 && new Date().getDate() < birthDateObj.getDate())) {
-        calculatedAge--;
+      calculatedAge--;
     }
 
     const validProfile: UserProfile = {
