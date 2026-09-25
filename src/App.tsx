@@ -100,6 +100,7 @@ export default function App() {
   const handleLogout = () => {
     AuthService.logout();
     setUserProfile(null);
+    navigate('home');
   };
 
   const handleAdminAuthSuccess = () => {
