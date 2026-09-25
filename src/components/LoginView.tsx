@@ -52,9 +52,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setGender(asAdmin ? 'Male' : 'Female');
     setMobileNumber(asAdmin ? '+1 (555) 987-6543' : '+1 (555) 234-5678');
     setAddress(asAdmin ? 'Medical Admin Center, Suite 100, San Francisco, CA' : '742 Evergreen Terrace, Springfield, IL 62704');
+    setIsAdmin(asAdmin);
     if (asAdmin) {
-      setIsAdmin(true);
       setAdminPasscode('admin');
+    } else {
+      setAdminPasscode('');
     }
     setErrors({});
   };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminPasscodeModal } from './components/AdminPasscodeModal';
 import { AdminRulesModal } from './components/AdminRulesModal';
 import { AmbulanceLoader } from './components/AmbulanceLoader';
@@ -19,7 +19,15 @@ import { RuleStorageService } from './services/RuleStorageService';
 import { InferenceCycleResult, UserProfile } from './types';
 
 export default function App() {
-  const [viewHistory, setViewHistory] = useState<Array<'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals'>>(['home']);
+  type ViewType = 'home' | 'assessment' | 'results' | 'login' | 'history' | 'hospitals';
+  const [viewHistory, setViewHistory] = useState<Array<ViewType>>(() => {
+    try {
+      const saved = sessionStorage.getItem('app_viewHistory');
+      return saved ? JSON.parse(saved) : ['home'];
+    } catch {
+      return ['home'];
+    }
+  });
   const currentView = viewHistory[viewHistory.length - 1];
 
   // Push a new view onto the history stack
@@ -42,8 +50,36 @@ export default function App() {
   };
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => AuthService.getUserProfile());
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(() => LanguageService.getLanguage());
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
-  const [inferenceResult, setInferenceResult] = useState<InferenceCycleResult | null>(null);
+  
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('app_selectedSymptoms');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  const [inferenceResult, setInferenceResult] = useState<InferenceCycleResult | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('app_inferenceResult');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('app_viewHistory', JSON.stringify(viewHistory));
+  }, [viewHistory]);
+
+  useEffect(() => {
+    sessionStorage.setItem('app_selectedSymptoms', JSON.stringify(selectedSymptoms));
+  }, [selectedSymptoms]);
+
+  useEffect(() => {
+    sessionStorage.setItem('app_inferenceResult', JSON.stringify(inferenceResult));
+  }, [inferenceResult]);
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
@@ -73,6 +109,8 @@ export default function App() {
         ? { ...prev, isAdmin: true }
         : {
             fullName: 'Administrator',
+            birthdate: '1986-01-01',
+            gender: 'Other',
             age: 40,
             mobileNumber: '+1 (555) 000-0000',
             address: 'System Administration',

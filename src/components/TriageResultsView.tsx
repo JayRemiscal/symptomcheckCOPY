@@ -154,62 +154,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
 
       {/* Main Content Area */}
       <div className="max-w-4xl mx-auto w-full px-3.5 sm:px-5 pt-4 sm:pt-6 space-y-4 sm:space-y-6 flex-1">
-        {/* Patient Profile Identification Summary */}
-        {userProfile ? (
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-teal-600 text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-sm uppercase">
-                {userProfile.fullName.charAt(0) || 'P'}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-extrabold text-base text-slate-900">
-                    {userProfile.fullName}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
-                    {userProfile.age} yrs old ({userProfile.gender})
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                  <span>📱 {userProfile.mobileNumber}</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span>📍 {userProfile.address}</span>
-                </p>
-              </div>
-            </div>
 
-            {onOpenLogin && (
-              <button
-                onClick={onOpenLogin}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors border border-slate-200 shrink-0 self-end sm:self-center cursor-pointer"
-              >
-                Edit Profile
-              </button>
-            )}
-          </div>
-        ) : (
-          onOpenLogin && (
-            <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-              <div>
-                <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded bg-teal-500/30 text-teal-300 border border-teal-500/40">
-                  Unregistered Assessment
-                </span>
-                <h3 className="font-bold text-sm sm:text-base mt-1">
-                  Attach Patient Record to this Triage Summary
-                </h3>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  Sign in with your name, age, mobile number & address to personalize your exported report.
-                </p>
-              </div>
-              <button
-                onClick={onOpenLogin}
-                className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-colors shrink-0 cursor-pointer shadow-sm"
-              >
-                Sign In Now
-              </button>
-            </div>
-          )
-        )}
 
 
 
