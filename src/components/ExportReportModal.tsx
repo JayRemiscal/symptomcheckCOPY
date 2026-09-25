@@ -120,10 +120,16 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
               {userProfile && (
                 <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
                   <div>
-                    <span className="font-bold text-slate-900">Patient:</span> {userProfile.fullName} ({userProfile.age} yrs)
+                    <span className="font-bold text-slate-900">Patient:</span> {userProfile.fullName}
                   </div>
                   <div>
                     <span className="font-bold text-slate-900">Mobile:</span> {userProfile.mobileNumber}
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900">Birthdate:</span> {new Date(userProfile.birthdate).toLocaleDateString()} ({userProfile.age} yrs)
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900">Gender:</span> {userProfile.gender}
                   </div>
                   <div className="sm:col-span-2">
                     <span className="font-bold text-slate-900">Address:</span> {userProfile.address}

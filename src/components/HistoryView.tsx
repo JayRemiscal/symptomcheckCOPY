@@ -191,7 +191,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
     HistoryService.getHistory(profile)
   );
   const [filter, setFilter] = useState<SeverityFilter>('all');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const filtered = useMemo(
     () => (filter === 'all' ? entries : entries.filter((e) => e.severity === filter)),
@@ -209,7 +209,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   const handleClearAll = () => {
     HistoryService.clearHistory(profile);
     setEntries([]);
-    setShowClearConfirm(false);
+    setShowClearModal(false);
   };
 
   const FILTERS: { value: SeverityFilter; label: string }[] = [
@@ -239,36 +239,19 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {entries.length > 0 && (
-                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
                   {entries.length} record{entries.length !== 1 ? 's' : ''}
                 </span>
               )}
-              {entries.length > 0 && !showClearConfirm && (
+              {entries.length > 0 && (
                 <button
-                  onClick={() => setShowClearConfirm(true)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer"
+                  onClick={() => setShowClearModal(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer whitespace-nowrap"
                 >
                   Clear All
                 </button>
-              )}
-              {showClearConfirm && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-slate-600 font-medium">Sure?</span>
-                  <button
-                    onClick={handleClearAll}
-                    className="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-colors cursor-pointer"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => setShowClearConfirm(false)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               )}
             </div>
           </div>
@@ -373,6 +356,35 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           />
         ))}
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-200/50 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center mb-4 border border-rose-100">
+              <AlertOctagon className="w-6 h-6 text-rose-500" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Clear History?</h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-6">
+              Are you sure you want to delete all {entries.length} history {entries.length === 1 ? 'record' : 'records'}? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-sm transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 font-bold text-sm transition-colors cursor-pointer"
+              >
+                Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

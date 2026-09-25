@@ -48,10 +48,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
   // Demo user preset for single-click auto-fill
   const handleQuickFillDemo = (asAdmin = false) => {
     setFullName(asAdmin ? 'Ivan Carl M. Graciano (Admin)' : 'Ivan Carl M. Graciano');
-    setBirthdate(asAdmin ? '1982-05-14' : '1990-08-22');
+    setBirthdate(asAdmin ? '1990-08-22' : '1990-08-22');
     setGender(asAdmin ? 'Male' : 'Female');
-    setMobileNumber(asAdmin ? '+1 (555) 987-6543' : '+1 (555) 234-5678');
-    setAddress(asAdmin ? 'Medical Admin Center, Suite 100, San Francisco, CA' : '742 Evergreen Terrace, Springfield, IL 62704');
+    setMobileNumber(asAdmin ? '0917-123-4567' : '0917-123-4567');
+    setAddress(asAdmin ? 'Pagadian City, Zamboanga del Sur' : 'Pagadian City, Zamboanga del Sur');
     setIsAdmin(asAdmin);
     if (asAdmin) {
       setAdminPasscode('admin');
@@ -280,7 +280,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   setMobileNumber(e.target.value);
                   if (errors.mobileNumber) setErrors((prev) => ({ ...prev, mobileNumber: '' }));
                 }}
-                placeholder="e.g. +1 (555) 019-2834"
+                placeholder="e.g. 0917-123-4567"
                 className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-2xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${errors.mobileNumber
                   ? 'border-rose-400 bg-rose-50/20 focus:ring-rose-400/40'
                   : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 focus:bg-white'
