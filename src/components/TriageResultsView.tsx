@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { LanguageService } from '../services/LanguageService';
+import { SupportedLanguage } from '../data/translations';
 import {
   Activity,
   AlertCircle,
@@ -27,6 +29,7 @@ import { UserProfile, InferenceCycleResult, TriageSeverity } from '../types';
 interface TriageResultsViewProps {
   result: InferenceCycleResult;
   userProfile?: UserProfile | null;
+  currentLanguage?: SupportedLanguage;
   onStartNewAssessment: () => void;
   onOpenExportModal: () => void;
   onOpenLogin?: () => void;
@@ -37,11 +40,13 @@ interface TriageResultsViewProps {
 export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
   result,
   userProfile,
+  currentLanguage,
   onStartNewAssessment,
   onOpenExportModal,
   onOpenLogin,
   onFindHospitals,
 }) => {
+  const t = (key: string) => LanguageService.t(key, currentLanguage);
 
   const [whyDrawerOpen, setWhyDrawerOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'facts' | 'rules'>('overview');
@@ -155,8 +160,45 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
       {/* Main Content Area */}
       <div className="max-w-4xl mx-auto w-full px-3.5 sm:px-5 pt-4 sm:pt-6 space-y-4 sm:space-y-6 flex-1">
 
-
-
+        {/* Patient Info Card */}
+        {userProfile && (
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.04)] overflow-hidden">
+            <div className="px-4 sm:px-6 py-3 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                <span className="text-base leading-none">👤</span>
+              </div>
+              <div>
+                <h2 className="text-xs sm:text-sm font-bold text-slate-900 leading-none">Patient Information</h2>
+                <p className="text-[11px] text-slate-500 mt-0.5">Registered profile used for this assessment</p>
+              </div>
+            </div>
+            <div className="px-4 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-xs">
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Full Name</span>
+                <span className="font-semibold text-slate-800">{userProfile.fullName}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Birthdate</span>
+                <span className="font-semibold text-slate-800">
+                  {new Date(userProfile.birthdate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  <span className="ml-1 text-slate-500 font-normal">({userProfile.age} yrs)</span>
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Gender</span>
+                <span className="font-semibold text-slate-800">{userProfile.gender}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Mobile</span>
+                <span className="font-semibold text-slate-800">{userProfile.mobileNumber}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Address</span>
+                <span className="font-semibold text-slate-800">{userProfile.address}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 2. Primary Recommendation Card */}
 
@@ -170,7 +212,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                 <FileText className="w-4 h-4" />
               </div>
               <h2 className="font-bold text-slate-900 text-sm sm:text-base md:text-lg truncate">
-                Clinical Care Directives
+                {t('triageDirectives')}
               </h2>
             </div>
             <span className="text-xs font-bold px-3 py-1 rounded-full bg-teal-50 border border-teal-100 text-teal-800 whitespace-nowrap shrink-0">
@@ -182,7 +224,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
           <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
             {/* Explanation Note */}
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-teal-50/60 via-sky-50/30 to-white border border-teal-100/80 text-slate-700 text-xs sm:text-sm leading-relaxed">
-              <span className="font-bold text-slate-900 block mb-1">Clinical Assessment Rationale:</span>
+              <span className="font-bold text-slate-900 block mb-1">{t('rationale')}</span>
               {primaryTriage.explanation}
             </div>
 
@@ -190,7 +232,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-teal-500"></span>
-                Immediate Care Steps
+                {t('immediateSteps')}
               </h3>
               <ul className="space-y-2.5">
                 {primaryTriage.recommendations.map((step, idx) => (
@@ -217,10 +259,10 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                     </div>
                     <div>
                       <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-none">
-                        Targeted Care by Reported Symptom
+                        {t('targetedCare')}
                       </h3>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Specific comfort measures and symptom-relief steps tailored to your selections
+                        {t('targetedCareSub')}
                       </p>
                     </div>
                   </div>
@@ -233,11 +275,10 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                   {result.symptomAdvice.map((advice) => (
                     <div
                       key={advice.symptomId}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        advice.isEmergencyFlag
+                      className={`p-4 rounded-2xl border transition-all ${advice.isEmergencyFlag
                           ? 'bg-rose-50/40 border-rose-200/90'
                           : 'bg-gradient-to-br from-teal-50/30 via-sky-50/20 to-white border-slate-200/80'
-                      }`}
+                        }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-100">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -245,15 +286,14 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                             {advice.symptomLabel}
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${
-                              advice.isEmergencyFlag
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${advice.isEmergencyFlag
                                 ? 'bg-rose-100 text-rose-800 border border-rose-200'
                                 : advice.category === 'respiratory'
-                                ? 'bg-sky-50 text-sky-700 border border-sky-200/70'
-                                : advice.category === 'systemic'
-                                ? 'bg-amber-50 text-amber-800 border border-amber-200/70'
-                                : 'bg-purple-50 text-purple-800 border border-purple-200/70'
-                            }`}
+                                  ? 'bg-sky-50 text-sky-700 border border-sky-200/70'
+                                  : advice.category === 'systemic'
+                                    ? 'bg-amber-50 text-amber-800 border border-amber-200/70'
+                                    : 'bg-purple-50 text-purple-800 border border-purple-200/70'
+                              }`}
                           >
                             {advice.isEmergencyFlag ? 'Red Flag' : advice.category.replace('_', ' ')}
                           </span>
@@ -316,33 +356,30 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
               <div className="flex border-b border-slate-100 pb-3 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
-                    activeTab === 'overview'
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${activeTab === 'overview'
                       ? 'bg-teal-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
-                  Step-by-Step Pathway
+                  {t('stepByStep')}
                 </button>
                 <button
                   onClick={() => setActiveTab('facts')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
-                    activeTab === 'facts'
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${activeTab === 'facts'
                       ? 'bg-teal-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
-                  Identified Factors ({Object.keys(result.finalWorkingMemory).length})
+                  {t('allFactors')} ({Object.keys(result.finalWorkingMemory).length})
                 </button>
                 <button
                   onClick={() => setActiveTab('rules')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
-                    activeTab === 'rules'
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${activeTab === 'rules'
                       ? 'bg-teal-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
-                  Clinical Rules Applied ({result.firedRules.length})
+                  {t('rulesApplied')} ({result.firedRules.length})
                 </button>
               </div>
 
@@ -353,10 +390,10 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                   <div>
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
-                      1. Symptoms Reported
+                      {t('symptomsReported')}
                     </div>
                     {result.initialSymptoms.length === 0 ? (
-                      <p className="text-xs text-slate-500 italic">No symptoms were selected.</p>
+                      <p className="text-xs text-slate-500 italic">{t('noSymptomsSelected')}</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {result.initialSymptoms.map((symId) => (
@@ -376,11 +413,11 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                   <div>
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
-                      2. Clinical Patterns Identified
+                      {t('clinicalPatterns')}
                     </div>
                     {result.derivedFacts.length === 0 ? (
                       <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-                        Your symptoms directly matched the clinical criteria without needing intermediate inference steps.
+                        {t('directlyMatched')}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -394,11 +431,11 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                                 {factTrace.fact.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                               </span>
                               <span className="text-sky-800 text-[11px] mt-0.5 block">
-                                Inferred by rule: {factTrace.byRuleName}
+                                {t('inferredByRule')} {factTrace.byRuleName}
                               </span>
                             </div>
                             <span className="px-2.5 py-0.5 rounded-full bg-sky-200/80 text-sky-900 font-bold text-[10px] shrink-0">
-                              Step {factTrace.derivedInPass}
+                              {t('step')} {factTrace.derivedInPass}
                             </span>
                           </div>
                         ))}
@@ -410,12 +447,12 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                   <div>
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
-                      3. Synthesis Conclusion
+                      {t('synthesisConclusion')}
                     </div>
                     <div className="p-4 rounded-2xl bg-slate-900 text-white text-xs space-y-1.5">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="text-teal-300 font-bold">
-                          Assigned Triage Tier: {severity.toUpperCase()}
+                          {t('assignedTriage')} {severity.toUpperCase()}
                         </span>
 
                       </div>
@@ -432,10 +469,10 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                 <div className="space-y-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      All Factors Evaluated
+                      {t('allFactors')}
                     </h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Active symptoms and evaluated medical markers during this check:
+                      {t('allFactorsSub')}
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -449,7 +486,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                             factKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                         </span>
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200 shrink-0">
-                          Active
+                          {t('active')}
                         </span>
                       </div>
                     ))}
@@ -462,10 +499,10 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                 <div className="space-y-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Medical Rules Applied ({result.firedRules.length})
+                      {t('rulesApplied')} ({result.firedRules.length})
                     </h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Clinical forward-chaining rules matched to your symptom profile:
+                      {t('rulesAppliedSub')}
                     </p>
                   </div>
                   <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-2xl overflow-hidden">
@@ -481,11 +518,11 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                             </span>
                           </div>
                           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold shrink-0">
-                            Step {rule.passNumber}
+                            {t('step')} {rule.passNumber}
                           </span>
                         </div>
                         <div className="mt-1.5 text-slate-600 pl-7 text-[11px]">
-                          Inferred Result:{' '}
+                          {t('inferredResult')}{' '}
                           <span className="font-bold text-slate-900">
                             {rule.assertedFact.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                           </span>
@@ -500,7 +537,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
             </div>
           )}
         </div>
-        
+
         {/* Age Bracket — Possible Conditions for Your Age Group */}
         {(() => {
           const age = userProfile?.age ?? null;
@@ -521,7 +558,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
                   </div>
                   <div className="min-w-0">
                     <h2 className="font-bold text-slate-900 text-sm sm:text-base leading-none">
-                      Possible Conditions for Your Profile
+                      {t('possibleConditions')}
                     </h2>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       {gender} · Age {age} · <span className="font-semibold text-indigo-600">{bracket.label}</span>
@@ -566,7 +603,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
             className="flex-1 min-h-[48px] flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border border-slate-200/90 font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
           >
             <RefreshCw className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <span className="truncate">New</span>
+            <span className="truncate">{t('newBtn')}</span>
           </button>
 
           {onFindHospitals && (
@@ -576,7 +613,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
               className="flex-1 min-h-[48px] flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all shadow-2xs active:scale-[0.99]"
             >
               <span className="text-base leading-none">🏥</span>
-              <span className="truncate">Hospitals</span>
+              <span className="truncate">{t('hospitalsBtn')}</span>
             </button>
           )}
 
@@ -586,7 +623,7 @@ export const TriageResultsView: React.FC<TriageResultsViewProps> = ({
             className="flex-1 min-h-[48px] flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-gradient-to-r from-teal-600 via-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 active:from-teal-700 active:to-teal-800 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md shadow-teal-700/20 active:scale-[0.99]"
           >
             <Download className="w-3.5 h-3.5 text-white shrink-0" />
-            <span className="truncate">Export</span>
+            <span className="truncate">{t('exportBtn')}</span>
           </button>
         </div>
       </div>

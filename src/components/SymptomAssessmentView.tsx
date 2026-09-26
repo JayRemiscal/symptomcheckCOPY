@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { LanguageService } from '../services/LanguageService';
+import { SupportedLanguage } from '../data/translations';
 import {
   AlertTriangle,
   Brain,
@@ -17,6 +19,7 @@ import { SymptomCategory, SymptomDefinition } from '../types';
 
 interface SymptomAssessmentViewProps {
   selectedSymptoms: string[];
+  currentLanguage: SupportedLanguage;
   onToggleSymptom: (symptomId: string) => void;
   onClearSymptoms: () => void;
   onApplyPreset: (symptomIds: string[]) => void;
@@ -25,11 +28,13 @@ interface SymptomAssessmentViewProps {
 
 export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
   selectedSymptoms,
+  currentLanguage,
   onToggleSymptom,
   onClearSymptoms,
   onApplyPreset,
   onEvaluate,
 }) => {
+  const t = (key: string) => LanguageService.t(key, currentLanguage);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedSections, setCollapsedSections] = useState<Record<SymptomCategory, boolean>>({
@@ -118,10 +123,10 @@ export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-                  What symptoms are you experiencing?
+                  {t('assessmentTitle')}
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                  Select all symptoms currently present to generate an instant, confidential forward-chaining triage appraisal with tailored care steps.
+                  {t('assessmentSub')}
                 </p>
               </div>
 
@@ -132,7 +137,7 @@ export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
               <div className="flex items-center justify-between gap-1.5 text-xs font-semibold text-slate-600 mb-2">
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                  <span>Quick Simulation Presets</span>
+                  <span>{t('presets')}</span>
                 </span>
                 <span className="text-[10px] text-slate-400 sm:hidden">Swipe &rarr;</span>
               </div>
@@ -479,7 +484,7 @@ export const SymptomAssessmentView: React.FC<SymptomAssessmentViewProps> = ({
             className="flex-1 w-full min-h-[50px] flex items-center justify-center gap-2.5 py-3.5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-teal-600 via-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 active:from-teal-700 active:to-teal-800 active:scale-[0.99] text-white font-extrabold text-sm sm:text-base shadow-lg shadow-teal-700/20 hover:shadow-xl hover:shadow-teal-700/25 transition-all focus:outline-none focus:ring-4 focus:ring-teal-500/25 select-none"
           >
             <Zap className="w-4 h-4 sm:w-5 sm:h-5 fill-white shrink-0" />
-            <span className="truncate">Evaluate Symptoms</span>
+            <span className="truncate">{t('evaluateSymptoms')}</span>
             <span className="ml-1 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] sm:text-xs font-mono font-bold shrink-0">
               {selectedSymptoms.length}
             </span>

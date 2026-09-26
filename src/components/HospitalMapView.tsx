@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { GeoCoordinate, GeoService, NearbyHospital } from '../services/GeoService';
+import { SupportedLanguage } from '../data/translations';
+import { LanguageService } from '../services/LanguageService';
 
 // Fix Leaflet marker icon paths broken by Vite bundling
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -52,11 +54,13 @@ interface HospitalMapViewProps {
   profile: UserProfile | null;
   onOpenLogin: () => void;
   onStartAssessment: () => void;
+  currentLanguage?: SupportedLanguage;
 }
 
 type Status = 'idle' | 'locating' | 'geocoding' | 'searching' | 'done' | 'error';
 
-export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpenLogin }) => {
+export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpenLogin, currentLanguage }) => {
+  const t = (key: string) => LanguageService.t(key, currentLanguage);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -284,7 +288,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               <Hospital className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-extrabold text-slate-900 leading-none">Nearest Hospitals</h1>
+              <h1 className="text-base sm:text-lg font-extrabold text-slate-900 leading-none">{t('nearestHospitals')}</h1>
               {locationSrc && status === 'done' && (
                 <p className="text-[11px] text-teal-600 mt-0.5 font-medium">📍 Near: {locationSrc}</p>
               )}
@@ -307,16 +311,16 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               className="px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-              <span className="hidden sm:inline">Search</span>
+              <span className="hidden sm:inline">{t('searchBtn')}</span>
             </button>
             <button
               onClick={useGPS}
               disabled={isLoading}
-              title="Use my GPS location"
+              title={t('gpsBtn')}
               className="px-3 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 border border-indigo-200 text-indigo-700 font-bold text-sm transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
             >
               <Crosshair className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">GPS</span>
+              <span className="hidden sm:inline text-xs">{t('gpsBtn')}</span>
             </button>
           </div>
 
@@ -324,9 +328,9 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           {isLoading && (
             <p className="text-xs text-teal-600 font-medium flex items-center gap-1.5">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {status === 'locating' && 'Getting GPS location…'}
-              {status === 'geocoding' && 'Locating address…'}
-              {status === 'searching' && 'Searching for nearby hospitals…'}
+              {status === 'locating' && t('gettingGps')}
+              {status === 'geocoding' && t('locatingAddress')}
+              {status === 'searching' && t('searchingHospitals')}
             </p>
           )}
         </div>
@@ -342,12 +346,12 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-teal-500/30 text-teal-300 border border-teal-500/40">
                 Guest Mode
               </span>
-              <h2 className="font-bold text-sm mt-1.5">Sign in to auto-fill your address</h2>
-              <p className="text-xs text-slate-300 mt-0.5">Or type an address / tap GPS above.</p>
+              <h2 className="font-bold text-sm mt-1.5">{t('signInAutoFill')}</h2>
+              <p className="text-xs text-slate-300 mt-0.5">{t('orTypeAddress')}</p>
             </div>
             <button onClick={onOpenLogin}
               className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer">
-              Sign In
+              {t('signIn')}
             </button>
           </div>
         )}
@@ -357,13 +361,13 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
             <span className="text-xl shrink-0">📡</span>
             <div>
-              <p className="text-sm font-bold text-amber-800">You're offline</p>
+              <p className="text-sm font-bold text-amber-800">{t('youreOffline')}</p>
               <p className="text-[11px] text-amber-600 mt-0.5">
                 {dataSource === 'cache'
-                  ? 'Showing your last saved hospital search. Map tiles unavailable.'
+                  ? t('offlineCached')
                   : dataSource === 'static'
-                    ? 'Showing built-in Philippine hospital list sorted by your GPS. Map tiles unavailable.'
-                    : 'No internet connection. Hospital map unavailable.'}
+                    ? t('offlineStatic')
+                    : t('offlineNoData')}
               </p>
             </div>
           </div>
@@ -378,11 +382,11 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               <div className="flex flex-wrap gap-3 mt-2">
                 <button onClick={() => setStatus('idle')}
                   className="text-xs font-bold text-rose-600 flex items-center gap-1 cursor-pointer hover:underline">
-                  <RefreshCw className="w-3 h-3" /> Try again
+                  <RefreshCw className="w-3 h-3" /> {t('tryAgain')}
                 </button>
                 <button onClick={useGPS}
                   className="text-xs font-bold text-indigo-600 flex items-center gap-1 cursor-pointer hover:underline">
-                  <Crosshair className="w-3 h-3" /> Use GPS instead
+                  <Crosshair className="w-3 h-3" /> {t('useGpsInstead')}
                 </button>
               </div>
             </div>
@@ -399,7 +403,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           <div className="space-y-2">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 px-1 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-rose-500" />
-              {hospitals.length} Hospitals / Clinics Found
+              {hospitals.length} {t('hospitalsFound')}
             </h2>
 
             {hospitals.map(h => {
@@ -448,7 +452,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
                         {directionLoadingId === h.id
                           ? <Loader2 className="w-3 h-3 animate-spin" />
                           : <Navigation className="w-3 h-3" />}
-                        {directionLoadingId === h.id ? 'Locating…' : 'Directions'}
+                        {directionLoadingId === h.id ? t('locating') : t('directions')}
                       </button>
                       {h.website && (
                         <a href={h.website} target="_blank" rel="noopener noreferrer"
@@ -472,8 +476,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               <Phone className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-bold text-sm text-slate-900">Emergency Contacts</h2>
-              <p className="text-[11px] text-slate-500">Philippine Emergency & Rescue Hotlines</p>
+              <h2 className="font-bold text-sm text-slate-900">{t('emergencyContacts')}</h2>
+              <p className="text-[11px] text-slate-500">{t('emergencyContactsSub')}</p>
             </div>
           </div>
 
@@ -498,7 +502,7 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
             <div className="flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-              <span>Hospital data from OpenStreetMap. Contact details may not always be current. Always verify before an emergency.</span>
+              <span>{t('hospitalDataNote')}</span>
             </div>
           </div>
         </div>

@@ -123,10 +123,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <span>Identity & Profile</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              {currentUser ? 'Update Profile' : 'Sign In / Register'}
+              {currentUser ? t('updateProfileTitle') : t('loginTitle')}
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm mt-1.5 leading-relaxed">
-              Please enter your details below. Administrator view access requires logging in with Admin privileges.
+              {t('loginSub')}
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <div className="p-3.5 rounded-2xl bg-teal-50/70 border border-teal-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs text-teal-900 font-medium">
               <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
-              <span>Testing? Use 1-click demo profiles:</span>
+              <span>{t('testingDemoProfiles')}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -146,7 +146,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 onClick={() => handleQuickFillDemo(false)}
                 className="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
-                Patient Demo
+                {t('patientDemo')}
               </button>
               <button
                 type="button"
@@ -154,7 +154,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 onClick={() => handleQuickFillDemo(true)}
                 className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-teal-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-teal-500/30"
               >
-                Admin Demo
+                {t('adminDemo')}
               </button>
             </div>
           </div>
@@ -162,7 +162,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           {/* Field 1: Full Name */}
           <div>
             <label htmlFor="fullName" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Full Name <span className="text-rose-500">*</span>
+              {t('fullNameLabel')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -196,7 +196,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* Field 2: Birthdate */}
             <div>
               <label htmlFor="birthdate" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Birthdate <span className="text-rose-500">*</span>
+                {t('birthdateLabel')} <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -228,7 +228,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* Field 2.5: Gender */}
             <div>
               <label htmlFor="gender" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Gender <span className="text-rose-500">*</span>
+                {t('genderLabel')} <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -247,10 +247,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     : 'border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 focus:bg-white'
                     }`}
                 >
-                  <option value="" disabled>Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="" disabled>{t('selectGender')}</option>
+                  <option value="Male">{t('genderMale')}</option>
+                  <option value="Female">{t('genderFemale')}</option>
+                  <option value="Other">{t('genderOther')}</option>
                 </select>
               </div>
               {errors.gender && (
@@ -265,7 +265,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           {/* Field 3: Registered Mobile Number */}
           <div>
             <label htmlFor="mobileNumber" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Registered Mobile Number <span className="text-rose-500">*</span>
+              {t('mobileLabel')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -298,7 +298,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           {/* Field 4: Address */}
           <div>
             <label htmlFor="address" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Address <span className="text-rose-500">*</span>
+              {t('addressLabel')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-slate-400">
@@ -339,7 +339,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 accent-teal-600 cursor-pointer"
               />
               <span className="text-xs font-bold text-slate-800">
-                Sign in with Administrator Privileges (Unlock Rules Engine Editor)
+                {t('adminToggle')}
               </span>
             </label>
 
@@ -382,7 +382,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               id="login-submit-btn"
               className="w-full sm:w-auto order-1 sm:order-3 inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-2xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white text-sm font-bold shadow-md shadow-teal-700/20 transition-all active:scale-[0.99] cursor-pointer"
             >
-              <span>{currentUser ? 'Save Changes' : isAdmin ? 'Sign In as Admin' : 'Sign In'}</span>
+              <span>{currentUser ? t('saveChanges') : isAdmin ? t('signInAdmin') : t('signIn')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -395,7 +395,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   onClick={onCancel}
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center px-4 py-3 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs sm:text-sm font-bold transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
               )}
 
@@ -407,7 +407,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl border border-teal-200 bg-teal-50 hover:bg-teal-100/80 text-teal-800 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-2xs"
                 >
                   <UserCheck className="w-4 h-4 text-teal-600 shrink-0" />
-                  <span>Guest</span>
+                  <span>{t('continueAsGuest')}</span>
                 </button>
               )}
             </div>

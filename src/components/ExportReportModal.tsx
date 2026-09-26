@@ -117,25 +117,45 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
               </p>
 
               {/* Patient Details Block */}
-              {userProfile && (
-                <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
-                  <div>
-                    <span className="font-bold text-slate-900">Patient:</span> {userProfile.fullName}
+              <div className="mt-3">
+                {userProfile ? (
+                  <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-sm">👤</span>
+                      <span className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider">Patient Information</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs text-slate-700">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Full Name</span>
+                        <span className="font-semibold text-slate-900">{userProfile.fullName}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Birthdate</span>
+                        <span className="font-semibold text-slate-900">
+                          {new Date(userProfile.birthdate).toLocaleDateString()} &nbsp;
+                          <span className="text-slate-500 font-normal">({userProfile.age} yrs old)</span>
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Gender</span>
+                        <span className="font-semibold text-slate-900">{userProfile.gender}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Mobile</span>
+                        <span className="font-semibold text-slate-900">{userProfile.mobileNumber}</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Address</span>
+                        <span className="font-semibold text-slate-900">{userProfile.address}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-bold text-slate-900">Mobile:</span> {userProfile.mobileNumber}
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-500 italic">
+                    No patient profile — assessed as Guest.
                   </div>
-                  <div>
-                    <span className="font-bold text-slate-900">Birthdate:</span> {new Date(userProfile.birthdate).toLocaleDateString()} ({userProfile.age} yrs)
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-900">Gender:</span> {userProfile.gender}
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className="font-bold text-slate-900">Address:</span> {userProfile.address}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
 

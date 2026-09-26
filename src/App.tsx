@@ -227,6 +227,7 @@ export default function App() {
         {currentView === 'assessment' && (
           <SymptomAssessmentView
             selectedSymptoms={selectedSymptoms}
+            currentLanguage={currentLanguage}
             onToggleSymptom={handleToggleSymptom}
             onClearSymptoms={handleClearSymptoms}
             onApplyPreset={handleApplyPreset}
@@ -239,6 +240,7 @@ export default function App() {
           <TriageResultsView
             result={inferenceResult}
             userProfile={userProfile}
+            currentLanguage={currentLanguage}
             onStartNewAssessment={handleStartNewAssessment}
             onOpenExportModal={() => setShowExportModal(true)}
           onOpenLogin={() => navigate('login')}
@@ -249,6 +251,7 @@ export default function App() {
         {currentView === 'history' && (
           <HistoryView
             profile={userProfile}
+            currentLanguage={currentLanguage}
             onStartAssessment={handleStartAssessmentClick}
             onOpenLogin={() => navigate('login')}
             onViewResult={(result: InferenceCycleResult) => {
@@ -261,6 +264,7 @@ export default function App() {
         {currentView === 'hospitals' && (
           <HospitalMapView
             profile={userProfile}
+            currentLanguage={currentLanguage}
             onOpenLogin={() => navigate('login')}
             onStartAssessment={handleStartAssessmentClick}
           />
