@@ -70,13 +70,13 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
   const [manualAddr, setManualAddr] = useState('');
   const [locationSrc, setLocationSrc] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [dataSource, setDataSource] = useState<'live'|'cache'|'static'|null>(null);
+  const [dataSource, setDataSource] = useState<'live' | 'cache' | 'static' | null>(null);
 
   // Track online/offline
   useEffect(() => {
-    const up   = () => setIsOnline(true);
+    const up = () => setIsOnline(true);
     const down = () => setIsOnline(false);
-    window.addEventListener('online',  up);
+    window.addEventListener('online', up);
     window.addEventListener('offline', down);
     return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
   }, []);
@@ -362,8 +362,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
                 {dataSource === 'cache'
                   ? 'Showing your last saved hospital search. Map tiles unavailable.'
                   : dataSource === 'static'
-                  ? 'Showing built-in Philippine hospital list sorted by your GPS. Map tiles unavailable.'
-                  : 'No internet connection. Hospital map unavailable.'}
+                    ? 'Showing built-in Philippine hospital list sorted by your GPS. Map tiles unavailable.'
+                    : 'No internet connection. Hospital map unavailable.'}
               </p>
             </div>
           </div>
@@ -411,8 +411,8 @@ export const HospitalMapView: React.FC<HospitalMapViewProps> = ({ profile, onOpe
               return (
                 <div key={h.id} onClick={() => flyTo(h)}
                   className={`bg-white rounded-2xl border p-4 cursor-pointer transition-all shadow-[0_2px_8px_-3px_rgba(15,23,42,0.06)] ${selectedId === h.id
-                      ? 'border-teal-400 ring-2 ring-teal-500/20'
-                      : 'border-slate-200/80 hover:border-teal-200'
+                    ? 'border-teal-400 ring-2 ring-teal-500/20'
+                    : 'border-slate-200/80 hover:border-teal-200'
                     }`}
                 >
                   <div className="flex items-start justify-between gap-3">
